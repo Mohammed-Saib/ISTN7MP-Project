@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/loginFragment">
+
+    <fragment
+        android:id="@+id/loginFragment"
+        android:name="com.example.mpproject.presentation.view.auth.LoginFragment"
+        android:label="Login"
+        tools:layout="@layout/fragment_login">
+        <action
+            android:id="@+id/action_loginFragment_to_registerFragment"
+            app:destination="@id/registerFragment" />
+        <action
+            android:id="@+id/action_loginFragment_to_tasksFragment"
+            app:destination="@id/tasksFragment"
+            app:popUpTo="@id/loginFragment"
+            app:popUpToInclusive="true" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/registerFragment"
+        android:name="com.example.mpproject.presentation.view.auth.RegisterFragment"
+        android:label="Register"
+        tools:layout="@layout/fragment_register">
+        <action
+            android:id="@+id/action_registerFragment_to_loginFragment"
+            app:destination="@id/loginFragment" />
+        <action
+            android:id="@+id/action_registerFragment_to_tasksFragment"
+            app:destination="@id/tasksFragment"
+            app:popUpTo="@id/loginFragment"
+            app:popUpToInclusive="true" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/tasksFragment"
+        android:name="com.example.mpproject.presentation.view.TasksFragment"
+        android:label="Tasks"
+        tools:layout="@layout/fragment_tasks" />
+
+    <fragment
+        android:id="@+id/universityFragment"
+        android:name="com.example.mpproject.presentation.view.UniversityFragment"
+        android:label="University"
+        tools:layout="@layout/fragment_university" />
+
+    <fragment
+        android:id="@+id/calendarFragment"
+        android:name="com.example.mpproject.presentation.view.CalendarFragment"
+        android:label="Calendar"
+        tools:layout="@layout/fragment_calendar" />
+
+    <fragment
+        android:id="@+id/profileFragment"
+        android:name="com.example.mpproject.presentation.view.ProfileFragment"
+        android:label="Profile"
+        tools:layout="@layout/fragment_profile" />
+</navigation>

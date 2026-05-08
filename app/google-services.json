@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "569547996290",
+    "project_id": "mp-project-f77f2",
+    "storage_bucket": "mp-project-f77f2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:569547996290:android:c49ea08dfdf3dd3ce4089b",
+        "android_client_info": {
+          "package_name": "com.example.mpproject"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDDjNZ_iz8d-6JDxHcn25EgReHABmH7X2M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
