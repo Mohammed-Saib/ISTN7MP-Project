@@ -9,11 +9,25 @@ import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.NavigationUI;
 
+import com.example.mpproject.data.local.AppDatabase;
+import com.example.mpproject.data.repository.CalendarEventRepositoryImpl;
+import com.example.mpproject.data.repository.ModuleRepositoryImpl;
+import com.example.mpproject.data.repository.TodoRepositoryImpl;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 // [View] Single-activity host — owns the NavController and bottom nav visibility.
 public class MainActivity extends AppCompatActivity {
+
+    // Restore modules, todos, and calendar events from Firestore if Room is empty for this user.
+    // Guards against data loss caused by DB migration wipes or clean app reinstalls.
+    private void restoreFromFirestore(String uid) {
+        AppDatabase db = AppDatabase.getDatabase(this);
+        new ModuleRepositoryImpl(db.moduleDao()).syncFromFirestoreIfEmpty(uid);
+        new TodoRepositoryImpl(db.todoDao()).syncFromFirestoreIfEmpty(uid);
+        new CalendarEventRepositoryImpl(db.calendarEventDao()).syncFromFirestoreIfEmpty(uid);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,9 +56,11 @@ public class MainActivity extends AppCompatActivity {
             bottomNav.setVisibility(hideNav ? View.GONE : View.VISIBLE);
         });
 
-        // Already signed in — jump straight to the home dashboard
-        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+        // Already signed in — jump straight to the home dashboard and restore any lost data
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser != null) {
             navController.navigate(R.id.homeFragment);
+            restoreFromFirestore(currentUser.getUid());
         }
     }
 }

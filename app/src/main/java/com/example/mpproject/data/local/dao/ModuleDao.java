@@ -40,4 +40,7 @@ public interface ModuleDao {
     // Archived modules — shown on a separate archived list
     @Query("SELECT * FROM modules WHERE userId = :userId AND isArchived = 1 ORDER BY name ASC")
     LiveData<List<ModuleEntity>> getArchivedByUser(String userId);
+
+    @Query("SELECT COUNT(*) FROM modules WHERE userId = :userId")
+    int countByUser(String userId);
 }

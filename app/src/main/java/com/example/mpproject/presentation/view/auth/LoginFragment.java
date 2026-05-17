@@ -18,7 +18,11 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
 
 import com.example.mpproject.R;
+import com.example.mpproject.data.local.AppDatabase;
 import com.example.mpproject.data.repository.AuthRepositoryImpl;
+import com.example.mpproject.data.repository.CalendarEventRepositoryImpl;
+import com.example.mpproject.data.repository.ModuleRepositoryImpl;
+import com.example.mpproject.data.repository.TodoRepositoryImpl;
 import com.example.mpproject.databinding.FragmentLoginBinding;
 import com.example.mpproject.presentation.viewmodel.AuthViewModel;
 import com.example.mpproject.presentation.viewmodel.ViewModelFactory;
@@ -87,6 +91,11 @@ public class LoginFragment extends Fragment {
             if (user != null) {
                 binding.authProgressBar.setVisibility(View.GONE);
                 Toast.makeText(getContext(), "Logged in successfully!", Toast.LENGTH_SHORT).show();
+                // Restore any data lost from a DB migration or clean reinstall
+                AppDatabase db = AppDatabase.getDatabase(requireContext());
+                new ModuleRepositoryImpl(db.moduleDao()).syncFromFirestoreIfEmpty(user.getUid());
+                new TodoRepositoryImpl(db.todoDao()).syncFromFirestoreIfEmpty(user.getUid());
+                new CalendarEventRepositoryImpl(db.calendarEventDao()).syncFromFirestoreIfEmpty(user.getUid());
                 Navigation.findNavController(requireView())
                         .navigate(R.id.action_loginFragment_to_homeFragment);
             }

@@ -48,4 +48,7 @@ public interface CalendarEventDao {
     // Delete all events belonging to a recurrence group
     @Query("DELETE FROM calendar_events WHERE recurrenceGroupId = :groupId")
     void deleteByGroupId(String groupId);
+
+    @Query("SELECT COUNT(*) FROM calendar_events WHERE userId = :userId")
+    int countByUser(String userId);
 }

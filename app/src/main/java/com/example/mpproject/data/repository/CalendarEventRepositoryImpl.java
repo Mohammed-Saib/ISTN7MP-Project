@@ -117,6 +117,50 @@ public class CalendarEventRepositoryImpl implements CalendarEventRepository {
         });
     }
 
+    // If Room has no events for this user, fetch them all from Firestore and insert.
+    public void syncFromFirestoreIfEmpty(String userId) {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            if (calendarEventDao.countByUser(userId) > 0) return;
+            firestore.collection("users").document(userId)
+                    .collection("calendar_events")
+                    .get()
+                    .addOnSuccessListener(snap ->
+                            AppDatabase.databaseWriteExecutor.execute(() -> {
+                                for (com.google.firebase.firestore.DocumentSnapshot doc : snap.getDocuments()) {
+                                    try {
+                                        CalendarEventEntity e = new CalendarEventEntity();
+                                        e.setEventId(doc.getId());
+                                        e.setUserId(userId);
+                                        e.setTitle(doc.getString("title"));
+                                        e.setDescription(doc.getString("description"));
+                                        e.setModuleId(doc.getString("moduleId"));
+                                        e.setType(doc.getString("type"));
+                                        e.setColor(doc.getString("color"));
+                                        Long startTime = doc.getLong("startTime");
+                                        e.setStartTime(startTime != null ? startTime : 0L);
+                                        e.setEndTime(doc.getLong("endTime"));
+                                        Boolean allDay = doc.getBoolean("isAllDay");
+                                        e.setAllDay(allDay != null && allDay);
+                                        Boolean pushed = doc.getBoolean("isPushedToDeviceCalendar");
+                                        e.setPushedToDeviceCalendar(pushed != null && pushed);
+                                        e.setDeviceCalendarEventId(doc.getLong("deviceCalendarEventId"));
+                                        e.setRecurrencePattern(doc.getString("recurrencePattern"));
+                                        e.setRecurrenceGroupId(doc.getString("recurrenceGroupId"));
+                                        e.setRecurrenceEndDate(doc.getLong("recurrenceEndDate"));
+                                        Long createdAt = doc.getLong("createdAt");
+                                        e.setCreatedAt(createdAt != null ? createdAt : 0L);
+                                        Long updatedAt = doc.getLong("updatedAt");
+                                        e.setUpdatedAt(updatedAt != null ? updatedAt : 0L);
+                                        calendarEventDao.insert(e);
+                                    } catch (Exception ex) {
+                                        Log.e(TAG, "Error restoring event from Firestore", ex);
+                                    }
+                                }
+                            }))
+                    .addOnFailureListener(e -> Log.e(TAG, "Firestore event restore failed", e));
+        });
+    }
+
     // Sync to users/{userId}/calendar_events/{eventId} in Firestore
     private void syncToFirestore(CalendarEvent event) {
         try {

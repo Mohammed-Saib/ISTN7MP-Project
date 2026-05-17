@@ -52,4 +52,7 @@ public interface TodoDao {
     // Delete all todos belonging to a recurrence group
     @Query("DELETE FROM todos WHERE recurrenceGroupId = :groupId")
     void deleteByGroupId(String groupId);
+
+    @Query("SELECT COUNT(*) FROM todos WHERE userId = :userId")
+    int countByUser(String userId);
 }

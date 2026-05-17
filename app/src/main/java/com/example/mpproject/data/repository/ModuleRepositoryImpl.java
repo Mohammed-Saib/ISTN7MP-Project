@@ -82,6 +82,44 @@ public class ModuleRepositoryImpl implements ModuleRepository {
         return Transformations.map(moduleDao.getArchivedByUser(userId), this::toDomainList);
     }
 
+    // If Room has no modules for this user, fetch them all from Firestore and insert.
+    // Called on startup / after login to restore data that was lost due to DB migration or reinstall.
+    public void syncFromFirestoreIfEmpty(String userId) {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            if (moduleDao.countByUser(userId) > 0) return;
+            firestore.collection("users").document(userId)
+                    .collection("modules")
+                    .get()
+                    .addOnSuccessListener(snap ->
+                            AppDatabase.databaseWriteExecutor.execute(() -> {
+                                for (com.google.firebase.firestore.DocumentSnapshot doc : snap.getDocuments()) {
+                                    try {
+                                        ModuleEntity e = new ModuleEntity();
+                                        e.setModuleId(doc.getId());
+                                        e.setUserId(userId);
+                                        e.setName(doc.getString("name"));
+                                        e.setModuleCode(doc.getString("moduleCode"));
+                                        e.setLecturerName(doc.getString("lecturerName"));
+                                        e.setLecturerEmail(doc.getString("lecturerEmail"));
+                                        e.setLecturerOfficeHours(doc.getString("lecturerOfficeHours"));
+                                        e.setColor(doc.getString("color"));
+                                        e.setSemester(doc.getString("semester"));
+                                        Boolean archived = doc.getBoolean("isArchived");
+                                        e.setArchived(archived != null && archived);
+                                        Long createdAt = doc.getLong("createdAt");
+                                        e.setCreatedAt(createdAt != null ? createdAt : 0L);
+                                        Long updatedAt = doc.getLong("updatedAt");
+                                        e.setUpdatedAt(updatedAt != null ? updatedAt : 0L);
+                                        moduleDao.insert(e);
+                                    } catch (Exception ex) {
+                                        Log.e(TAG, "Error restoring module from Firestore", ex);
+                                    }
+                                }
+                            }))
+                    .addOnFailureListener(e -> Log.e(TAG, "Firestore module restore failed", e));
+        });
+    }
+
     // Push module data to users/{userId}/modules/{moduleId} in Firestore
     private void syncToFirestore(Module module) {
         try {
