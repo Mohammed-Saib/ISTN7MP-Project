@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?android:colorBackground"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingBottom="24dp">
+
+        <!-- ── Top bar: greeting + settings icon ── -->
+        <LinearLayout
+            android:id="@+id/home_top_bar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="20dp"
+            android:paddingTop="56dp"
+            android:paddingBottom="8dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <!-- Greeting line populated at runtime -->
+                <TextView
+                    android:id="@+id/tv_greeting"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="?attr/colorOnBackground"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    tools:text="Good morning, Alex" />
+
+                <TextView
+                    android:id="@+id/tv_date"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="?attr/colorOnSurface"
+                    android:textSize="13sp"
+                    tools:text="Saturday, 17 May" />
+            </LinearLayout>
+
+            <!-- Settings / avatar button -->
+            <ImageButton
+                android:id="@+id/btn_settings"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/bg_circle_surface"
+                android:contentDescription="Settings"
+                android:src="@drawable/ic_settings"
+                app:tint="?attr/colorOnSurface" />
+        </LinearLayout>
+
+        <!-- ── Quick-capture buttons ── -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal">
+
+            <!-- New Task -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_new_task"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="1"
+                android:text="@string/btn_new_task"
+                android:textSize="14sp"
+                app:cornerRadius="14dp"
+                app:icon="@drawable/ic_nav_todo"
+                app:iconSize="18dp" />
+
+            <!-- New Note -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_new_note"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:text="@string/btn_new_note"
+                android:textSize="14sp"
+                app:cornerRadius="14dp"
+                app:icon="@drawable/ic_nav_notes"
+                app:iconSize="18dp" />
+        </LinearLayout>
+
+        <!-- ── Today's tasks section ── -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginTop="24dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/label_today"
+                android:textColor="?attr/colorOnBackground"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/btn_see_all_tasks"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="?attr/colorPrimary"
+                android:textSize="13sp"
+                tools:text="See all" />
+        </LinearLayout>
+
+        <!-- Placeholder shown when no tasks are due today -->
+        <TextView
+            android:id="@+id/tv_no_tasks"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_rounded_surface"
+            android:gravity="center"
+            android:padding="20dp"
+            android:text="@string/label_no_tasks_today"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="14sp"
+            android:visibility="visible" />
+
+        <!-- Today's tasks list (populated at runtime) -->
+        <LinearLayout
+            android:id="@+id/container_today_tasks"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginTop="8dp"
+            android:orientation="vertical"
+            android:visibility="gone"
+            tools:visibility="gone" />
+
+        <!-- ── Coming Up section ── -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginTop="24dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/label_coming_up"
+                android:textColor="?attr/colorOnBackground"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/btn_see_calendar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="?attr/colorPrimary"
+                android:textSize="13sp"
+                tools:text="See all" />
+        </LinearLayout>
+
+        <!-- Upcoming events placeholder -->
+        <TextView
+            android:id="@+id/tv_no_upcoming"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_rounded_surface"
+            android:gravity="center"
+            android:padding="20dp"
+            android:text="@string/label_no_upcoming"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="14sp" />
+
+    </LinearLayout>
+</ScrollView>

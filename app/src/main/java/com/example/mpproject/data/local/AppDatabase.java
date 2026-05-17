@@ -22,7 +22,7 @@ import com.example.mpproject.data.local.entity.UserEntity;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-// Version bumped to 2 — fallbackToDestructiveMigration() handles the migration in dev
+// Version bumped to 3 — adds recurrencePattern/recurrenceGroupId/recurrenceEndDate to todos and calendar_events
 @Database(
         entities = {
                 UserEntity.class,
@@ -32,7 +32,7 @@ import java.util.concurrent.Executors;
                 TodoEntity.class,
                 CalendarEventEntity.class
         },
-        version = 2,
+        version = 3,
         exportSchema = true
 )
 public abstract class AppDatabase extends RoomDatabase {

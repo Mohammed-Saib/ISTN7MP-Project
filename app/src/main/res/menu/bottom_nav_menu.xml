@@ -1,19 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- IDs must match fragment IDs in nav_graph.xml for NavigationUI to work -->
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
-        android:id="@+id/tasksFragment"
-        android:icon="@android:drawable/ic_menu_today"
-        android:title="Tasks" />
+        android:id="@+id/homeFragment"
+        android:icon="@drawable/ic_nav_home"
+        android:title="@string/nav_home" />
     <item
-        android:id="@+id/universityFragment"
-        android:icon="@android:drawable/ic_menu_agenda"
-        android:title="Uni" />
+        android:id="@+id/modulesFragment"
+        android:icon="@drawable/ic_nav_modules"
+        android:title="@string/nav_modules" />
+    <item
+        android:id="@+id/notesFragment"
+        android:icon="@drawable/ic_nav_notes"
+        android:title="@string/nav_notes" />
+    <item
+        android:id="@+id/tasksFragment"
+        android:icon="@drawable/ic_nav_todo"
+        android:title="@string/nav_todo" />
     <item
         android:id="@+id/calendarFragment"
-        android:icon="@android:drawable/ic_menu_my_calendar"
-        android:title="Calendar" />
-    <item
-        android:id="@+id/profileFragment"
-        android:icon="@android:drawable/ic_menu_manage"
-        android:title="Profile" />
+        android:icon="@drawable/ic_nav_calendar"
+        android:title="@string/nav_calendar" />
 </menu>

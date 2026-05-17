@@ -9,11 +9,14 @@ public class CalendarEvent {
     private String description;
     private String type;                  // e.g. "LECTURE", "EXAM", "DEADLINE", "OTHER"
     private String color;                 // hex color for the calendar chip
-    private long startTime;              // epoch millis
-    private Long endTime;                // nullable — null for point-in-time events
+    private long startTime;               // epoch millis
+    private Long endTime;                 // nullable — null for point-in-time events
     private boolean isAllDay;
     private boolean isPushedToDeviceCalendar;
-    private Long deviceCalendarEventId;  // nullable — ID returned by CalendarContract after push
+    private Long deviceCalendarEventId;   // nullable — ID returned by CalendarContract after push
+    private String recurrencePattern;     // DAILY | WEEKLY | MONTHLY | YEARLY; null = non-recurring
+    private String recurrenceGroupId;     // shared UUID linking all occurrences in a series
+    private Long recurrenceEndDate;       // nullable epoch millis — end of recurrence window
     private long createdAt;
     private long updatedAt;
 
@@ -53,4 +56,13 @@ public class CalendarEvent {
     public void setPushedToDeviceCalendar(boolean pushed) { isPushedToDeviceCalendar = pushed; }
     public void setDeviceCalendarEventId(Long deviceCalendarEventId) { this.deviceCalendarEventId = deviceCalendarEventId; }
     public void setUpdatedAt(long updatedAt) { this.updatedAt = updatedAt; }
+
+    public String getRecurrencePattern() { return recurrencePattern; }
+    public void setRecurrencePattern(String recurrencePattern) { this.recurrencePattern = recurrencePattern; }
+
+    public String getRecurrenceGroupId() { return recurrenceGroupId; }
+    public void setRecurrenceGroupId(String recurrenceGroupId) { this.recurrenceGroupId = recurrenceGroupId; }
+
+    public Long getRecurrenceEndDate() { return recurrenceEndDate; }
+    public void setRecurrenceEndDate(Long recurrenceEndDate) { this.recurrenceEndDate = recurrenceEndDate; }
 }

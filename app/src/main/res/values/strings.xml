@@ -1,3 +1,44 @@
 <resources>
-    <string name="app_name">NotesApp</string>
+    <string name="app_name">StudyApp</string>
+
+    <!-- Bottom nav labels -->
+    <string name="nav_home">Home</string>
+    <string name="nav_modules">Modules</string>
+    <string name="nav_notes">Notes</string>
+    <string name="nav_todo">To-Do</string>
+    <string name="nav_calendar">Calendar</string>
+
+    <!-- Screen titles -->
+    <string name="title_home">Home</string>
+    <string name="title_modules">Modules</string>
+    <string name="title_notes">Notes</string>
+    <string name="title_todo">To-Do</string>
+    <string name="title_calendar">Calendar</string>
+    <string name="title_settings">Settings</string>
+
+    <!-- Home screen -->
+    <string name="greeting_morning">Good morning</string>
+    <string name="greeting_afternoon">Good afternoon</string>
+    <string name="greeting_evening">Good evening</string>
+    <string name="label_daily_progress">Daily Progress</string>
+    <string name="label_today">Today</string>
+    <string name="label_coming_up">Coming Up</string>
+    <string name="btn_new_task">New Task</string>
+    <string name="btn_new_note">New Note</string>
+    <string name="label_no_tasks_today">No tasks due today</string>
+    <string name="label_no_upcoming">Nothing coming up</string>
+
+    <!-- Settings screen -->
+    <string name="label_dark_mode">Dark Mode</string>
+    <string name="btn_logout">Log Out</string>
+
+    <!-- Filter chips -->
+    <string name="filter_all">All</string>
+    <string name="filter_modules">Modules</string>
+    <string name="filter_personal">Personal</string>
+    <string name="filter_open">Open</string>
+    <string name="filter_completed">Completed</string>
+    <string name="filter_high_priority">High Priority</string>
+    <string name="filter_medium_priority">Medium Priority</string>
+    <string name="filter_low_priority">Low Priority</string>
 </resources>

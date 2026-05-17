@@ -6,7 +6,7 @@ import androidx.room.ForeignKey;
 import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
-// A to-do item. Optionally linked to a module. No subtasks, no recurrence.
+// A to-do item. Optionally linked to a module.
 @Entity(tableName = "todos",
         foreignKeys = @ForeignKey(
                 entity = ModuleEntity.class,
@@ -30,9 +30,12 @@ public class TodoEntity {
     private Long dueDate;        // unix ms; null if no deadline
     private String priority;     // HIGH | MEDIUM | LOW
     private boolean isCompleted;
-    private Long completedAt;    // unix ms when marked complete; null if still active
-    private long createdAt;      // unix ms
-    private long updatedAt;      // unix ms
+    private Long completedAt;          // unix ms when marked complete; null if still active
+    private String recurrencePattern;  // DAILY | WEEKLY | MONTHLY | YEARLY; null = non-recurring
+    private String recurrenceGroupId;  // shared UUID across all instances of a recurring series
+    private Long recurrenceEndDate;    // unix ms; null if no end cap
+    private long createdAt;            // unix ms
+    private long updatedAt;            // unix ms
 
     public TodoEntity() {}
 
@@ -54,6 +57,12 @@ public class TodoEntity {
     public void setCompleted(boolean completed) { isCompleted = completed; }
     public Long getCompletedAt() { return completedAt; }
     public void setCompletedAt(Long completedAt) { this.completedAt = completedAt; }
+    public String getRecurrencePattern() { return recurrencePattern; }
+    public void setRecurrencePattern(String recurrencePattern) { this.recurrencePattern = recurrencePattern; }
+    public String getRecurrenceGroupId() { return recurrenceGroupId; }
+    public void setRecurrenceGroupId(String recurrenceGroupId) { this.recurrenceGroupId = recurrenceGroupId; }
+    public Long getRecurrenceEndDate() { return recurrenceEndDate; }
+    public void setRecurrenceEndDate(Long recurrenceEndDate) { this.recurrenceEndDate = recurrenceEndDate; }
     public long getCreatedAt() { return createdAt; }
     public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }
     public long getUpdatedAt() { return updatedAt; }

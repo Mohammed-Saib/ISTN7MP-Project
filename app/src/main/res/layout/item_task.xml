@@ -1,47 +1,93 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="8dp"
-    app:cardCornerRadius="8dp"
-    app:cardElevation="2dp">
+    android:layout_marginHorizontal="0dp"
+    android:layout_marginVertical="4dp"
+    app:cardBackgroundColor="?attr/colorSurface"
+    app:cardCornerRadius="14dp"
+    app:cardElevation="0dp"
+    app:strokeColor="?attr/colorOutline"
+    app:strokeWidth="1dp">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="16dp">
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="14dp">
 
-        <CheckBox
+        <!-- Completion checkbox -->
+        <com.google.android.material.checkbox.MaterialCheckBox
             android:id="@+id/task_checkbox"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            android:layout_height="wrap_content" />
 
-        <TextView
-            android:id="@+id/task_title"
+        <!-- Priority colour dot -->
+        <View
+            android:id="@+id/view_priority_dot"
+            android:layout_width="8dp"
+            android:layout_height="8dp"
+            android:layout_marginStart="10dp"
+            android:background="@drawable/bg_dot" />
+
+        <!-- Recurring indicator -->
+        <ImageView
+            android:id="@+id/iv_recurring"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_marginStart="6dp"
+            android:contentDescription="Recurring"
+            android:src="@drawable/ic_repeat"
+            android:visibility="gone"
+            app:tint="?attr/colorOnSurface" />
+
+        <!-- Text content -->
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@id/task_checkbox"
-            app:layout_constraintTop_toTopOf="parent"
-            tools:text="Task Title" />
+            android:layout_marginStart="10dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/task_description"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="@id/task_title"
-            app:layout_constraintTop_toBottomOf="@id/task_title"
-            tools:text="Task Description" />
+            <TextView
+                android:id="@+id/task_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="?attr/colorOnBackground"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                tools:text="Write project report" />
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
-</androidx.cardview.widget.CardView>
+            <!-- Due date — hidden when null -->
+            <TextView
+                android:id="@+id/tv_due_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="12sp"
+                android:visibility="gone"
+                tools:text="Due: Mon, 19 May 14:00"
+                tools:visibility="visible" />
+
+            <!-- Module chip — tag holds moduleId, text resolved by TasksFragment -->
+            <TextView
+                android:id="@+id/tv_task_module"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:background="@drawable/bg_rounded_surface"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="2dp"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="11sp"
+                android:visibility="gone"
+                tools:text="CS301"
+                tools:visibility="visible" />
+        </LinearLayout>
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

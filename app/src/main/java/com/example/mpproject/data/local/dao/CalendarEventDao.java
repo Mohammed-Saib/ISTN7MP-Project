@@ -40,4 +40,12 @@ public interface CalendarEventDao {
     // Events linked to a specific module
     @Query("SELECT * FROM calendar_events WHERE moduleId = :moduleId ORDER BY startTime ASC")
     LiveData<List<CalendarEventEntity>> getAllByModule(String moduleId);
+
+    // Update shared fields (non-date) for every event in a recurrence group
+    @Query("UPDATE calendar_events SET title = :title, description = :description, type = :type, moduleId = :moduleId, updatedAt = :updatedAt WHERE recurrenceGroupId = :groupId")
+    void updateGroupFields(String groupId, String title, String description, String type, String moduleId, long updatedAt);
+
+    // Delete all events belonging to a recurrence group
+    @Query("DELETE FROM calendar_events WHERE recurrenceGroupId = :groupId")
+    void deleteByGroupId(String groupId);
 }

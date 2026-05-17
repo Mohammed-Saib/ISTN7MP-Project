@@ -40,8 +40,7 @@ public class RegisterFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Auth screens don't need a TodoRepository — pass null so the DB isn't opened here.
-        ViewModelFactory factory = new ViewModelFactory(null, new AuthRepositoryImpl());
+        ViewModelFactory factory = new ViewModelFactory(new AuthRepositoryImpl());
         authViewModel = new ViewModelProvider(this, factory).get(AuthViewModel.class);
 
         binding.registerButton.setOnClickListener(v -> performRegistration());
@@ -111,7 +110,7 @@ public class RegisterFragment extends Fragment {
                         binding.authProgressBar.setVisibility(View.GONE);
                         Toast.makeText(getContext(), "Account created successfully!", Toast.LENGTH_SHORT).show();
                         Navigation.findNavController(requireView())
-                                .navigate(R.id.action_registerFragment_to_tasksFragment);
+                                .navigate(R.id.action_registerFragment_to_homeFragment);
                     }
                 });
     }

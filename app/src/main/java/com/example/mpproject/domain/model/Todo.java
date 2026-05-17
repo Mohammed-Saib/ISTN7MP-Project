@@ -7,10 +7,13 @@ public class Todo {
     private String moduleId;
     private String title;
     private String description;
-    private String priority;    // "LOW", "MEDIUM", "HIGH"
-    private Long dueDate;       // nullable epoch millis
-    private Long completedAt;   // nullable — set when the todo is marked complete
+    private String priority;           // "LOW", "MEDIUM", "HIGH"
+    private Long dueDate;              // nullable epoch millis
+    private Long completedAt;          // nullable — set when the todo is marked complete
     private boolean isCompleted;
+    private String recurrencePattern;  // DAILY | WEEKLY | MONTHLY | YEARLY; null = non-recurring
+    private String recurrenceGroupId;  // shared UUID linking all occurrences in a series
+    private Long recurrenceEndDate;    // nullable epoch millis — end of recurrence window
     private long createdAt;
     private long updatedAt;
 
@@ -47,4 +50,13 @@ public class Todo {
     public void setCompleted(boolean completed) { isCompleted = completed; }
 
     public void setCompletedAt(Long completedAt) { this.completedAt = completedAt; }
+
+    public String getRecurrencePattern() { return recurrencePattern; }
+    public void setRecurrencePattern(String recurrencePattern) { this.recurrencePattern = recurrencePattern; }
+
+    public String getRecurrenceGroupId() { return recurrenceGroupId; }
+    public void setRecurrenceGroupId(String recurrenceGroupId) { this.recurrenceGroupId = recurrenceGroupId; }
+
+    public Long getRecurrenceEndDate() { return recurrenceEndDate; }
+    public void setRecurrenceEndDate(Long recurrenceEndDate) { this.recurrenceEndDate = recurrenceEndDate; }
 }

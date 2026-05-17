@@ -25,4 +25,10 @@ public interface TodoRepository {
 
     // Todos with a due date in a given range — used by the calendar screen
     LiveData<List<Todo>> getByDueDateRange(String userId, long startMs, long endMs);
+
+    // Update shared non-date fields across every todo in a recurrence group
+    void updateGroup(Todo representative);
+
+    // Delete all todos in a recurrence group
+    void deleteGroup(String recurrenceGroupId, String userId);
 }

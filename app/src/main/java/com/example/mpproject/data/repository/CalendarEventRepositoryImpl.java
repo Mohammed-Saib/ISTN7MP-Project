@@ -81,6 +81,42 @@ public class CalendarEventRepositoryImpl implements CalendarEventRepository {
         return Transformations.map(calendarEventDao.getAllByModule(moduleId), this::toDomainList);
     }
 
+    @Override
+    public void updateGroup(CalendarEvent representative) {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            long now = System.currentTimeMillis();
+            calendarEventDao.updateGroupFields(
+                    representative.getRecurrenceGroupId(),
+                    representative.getTitle(),
+                    representative.getDescription(),
+                    representative.getType(),
+                    representative.getModuleId(),
+                    now);
+            syncGroupToFirestore(representative, now);
+        });
+    }
+
+    @Override
+    public void deleteGroup(String recurrenceGroupId, String userId) {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            calendarEventDao.deleteByGroupId(recurrenceGroupId);
+            try {
+                firestore.collection("users").document(userId)
+                        .collection("calendar_events")
+                        .whereEqualTo("recurrenceGroupId", recurrenceGroupId)
+                        .get()
+                        .addOnSuccessListener(snap -> {
+                            for (com.google.firebase.firestore.DocumentSnapshot doc : snap.getDocuments()) {
+                                doc.getReference().delete();
+                            }
+                        })
+                        .addOnFailureListener(e -> Log.e(TAG, "Firestore group delete failed", e));
+            } catch (Exception e) {
+                Log.e(TAG, "Firestore group delete error", e);
+            }
+        });
+    }
+
     // Sync to users/{userId}/calendar_events/{eventId} in Firestore
     private void syncToFirestore(CalendarEvent event) {
         try {
@@ -95,6 +131,9 @@ public class CalendarEventRepositoryImpl implements CalendarEventRepository {
             data.put("isAllDay", event.isAllDay());
             data.put("isPushedToDeviceCalendar", event.isPushedToDeviceCalendar());
             data.put("deviceCalendarEventId", event.getDeviceCalendarEventId());
+            data.put("recurrencePattern", event.getRecurrencePattern());
+            data.put("recurrenceGroupId", event.getRecurrenceGroupId());
+            data.put("recurrenceEndDate", event.getRecurrenceEndDate());
             data.put("createdAt", event.getCreatedAt());
             data.put("updatedAt", event.getUpdatedAt());
 
@@ -104,6 +143,29 @@ public class CalendarEventRepositoryImpl implements CalendarEventRepository {
                     .addOnFailureListener(e -> Log.e(TAG, "Firestore sync failed", e));
         } catch (Exception e) {
             Log.e(TAG, "Firestore sync error", e);
+        }
+    }
+
+    private void syncGroupToFirestore(CalendarEvent representative, long updatedAt) {
+        try {
+            firestore.collection("users").document(representative.getUserId())
+                    .collection("calendar_events")
+                    .whereEqualTo("recurrenceGroupId", representative.getRecurrenceGroupId())
+                    .get()
+                    .addOnSuccessListener(snap -> {
+                        Map<String, Object> patch = new HashMap<>();
+                        patch.put("title", representative.getTitle());
+                        patch.put("description", representative.getDescription());
+                        patch.put("type", representative.getType());
+                        patch.put("moduleId", representative.getModuleId());
+                        patch.put("updatedAt", updatedAt);
+                        for (com.google.firebase.firestore.DocumentSnapshot doc : snap.getDocuments()) {
+                            doc.getReference().update(patch);
+                        }
+                    })
+                    .addOnFailureListener(e -> Log.e(TAG, "Firestore group sync failed", e));
+        } catch (Exception e) {
+            Log.e(TAG, "Firestore group sync error", e);
         }
     }
 
@@ -119,6 +181,9 @@ public class CalendarEventRepositoryImpl implements CalendarEventRepository {
         event.setAllDay(e.isAllDay());
         event.setPushedToDeviceCalendar(e.isPushedToDeviceCalendar());
         event.setDeviceCalendarEventId(e.getDeviceCalendarEventId());
+        event.setRecurrencePattern(e.getRecurrencePattern());
+        event.setRecurrenceGroupId(e.getRecurrenceGroupId());
+        event.setRecurrenceEndDate(e.getRecurrenceEndDate());
         event.setUpdatedAt(e.getUpdatedAt());
         return event;
     }
@@ -145,6 +210,9 @@ public class CalendarEventRepositoryImpl implements CalendarEventRepository {
         e.setAllDay(event.isAllDay());
         e.setPushedToDeviceCalendar(event.isPushedToDeviceCalendar());
         e.setDeviceCalendarEventId(event.getDeviceCalendarEventId());
+        e.setRecurrencePattern(event.getRecurrencePattern());
+        e.setRecurrenceGroupId(event.getRecurrenceGroupId());
+        e.setRecurrenceEndDate(event.getRecurrenceEndDate());
         e.setCreatedAt(event.getCreatedAt());
         e.setUpdatedAt(event.getUpdatedAt());
         return e;

@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.view.View;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.WindowCompat;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.NavigationUI;
@@ -11,33 +12,39 @@ import androidx.navigation.ui.NavigationUI;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 
-// [View] Single-activity host. Sets up navigation and bottom nav visibility rules.
+// [View] Single-activity host — owns the NavController and bottom nav visibility.
 public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Allow content to draw behind system bars (edge-to-edge)
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+
         setContentView(R.layout.activity_main);
 
-        BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
+        BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
 
-        NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.nav_host_fragment);
+        NavHostFragment navHostFragment = (NavHostFragment)
+                getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment);
         if (navHostFragment == null) return;
 
         NavController navController = navHostFragment.getNavController();
-        NavigationUI.setupWithNavController(bottomNavigationView, navController);
+        NavigationUI.setupWithNavController(bottomNav, navController);
 
-        // Hide bottom nav on auth screens
+        // Auth and settings screens hide the bottom nav
         navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
-            boolean isAuthScreen = destination.getId() == R.id.loginFragment
-                    || destination.getId() == R.id.registerFragment;
-            bottomNavigationView.setVisibility(isAuthScreen ? View.GONE : View.VISIBLE);
+            int id = destination.getId();
+            boolean hideNav = id == R.id.loginFragment
+                    || id == R.id.registerFragment
+                    || id == R.id.settingsFragment;
+            bottomNav.setVisibility(hideNav ? View.GONE : View.VISIBLE);
         });
 
-        // Skip login screen if the user is already authenticated
+        // Already signed in — jump straight to the home dashboard
         if (FirebaseAuth.getInstance().getCurrentUser() != null) {
-            navController.navigate(R.id.tasksFragment);
+            navController.navigate(R.id.homeFragment);
         }
     }
 }

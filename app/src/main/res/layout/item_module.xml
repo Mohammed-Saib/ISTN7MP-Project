@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginVertical="4dp"
+    app:cardBackgroundColor="?attr/colorSurface"
+    app:cardCornerRadius="14dp"
+    app:cardElevation="0dp"
+    app:strokeColor="?attr/colorOutline"
+    app:strokeWidth="1dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <!-- Colour accent strip on the left -->
+        <View
+            android:id="@+id/view_color_strip"
+            android:layout_width="6dp"
+            android:layout_height="match_parent"
+            android:minHeight="72dp" />
+
+        <!-- Text block -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="14dp"
+            android:layout_marginVertical="14dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tv_module_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="?attr/colorOnBackground"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                tools:text="Software Engineering" />
+
+            <!-- Code + semester on one line -->
+            <TextView
+                android:id="@+id/tv_module_meta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="12sp"
+                tools:text="CS301 · Semester 1 2026" />
+
+            <!-- Lecturer name — hidden when null -->
+            <TextView
+                android:id="@+id/tv_lecturer_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="12sp"
+                android:visibility="gone"
+                tools:text="Dr. Smith"
+                tools:visibility="visible" />
+        </LinearLayout>
+
+        <!-- Archived badge — visible only for archived modules -->
+        <TextView
+            android:id="@+id/tv_archived_badge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="14dp"
+            android:background="@drawable/bg_rounded_surface"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="3dp"
+            android:text="Archived"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="11sp"
+            android:visibility="gone" />
+
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

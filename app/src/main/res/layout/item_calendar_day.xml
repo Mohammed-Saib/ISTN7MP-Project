@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One cell in the 7-column month grid.
+     Width fills the column (GridLayoutManager handles the 1/7 split).
+     Background is set in code: circle for today/selected, transparent otherwise. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="52dp"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:paddingBottom="4dp">
+
+    <!-- Day number; color and alpha set in CalendarGridAdapter -->
+    <TextView
+        android:id="@+id/tv_day_number"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:gravity="center"
+        android:textSize="14sp" />
+
+    <!-- Row of up to 3 event-type dots; built programmatically in the adapter -->
+    <LinearLayout
+        android:id="@+id/ll_dots"
+        android:layout_width="wrap_content"
+        android:layout_height="6dp"
+        android:gravity="center"
+        android:orientation="horizontal" />
+
+</LinearLayout>

@@ -10,13 +10,14 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
 
 import com.example.mpproject.R;
 import com.example.mpproject.data.repository.AuthRepositoryImpl;
-import com.example.mpproject.databinding.FragmentProfileBinding;
+import com.example.mpproject.databinding.FragmentSettingsBinding;
 import com.example.mpproject.presentation.viewmodel.AuthViewModel;
 import com.example.mpproject.presentation.viewmodel.ViewModelFactory;
 import com.google.android.material.textfield.TextInputEditText;
@@ -27,16 +28,17 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-// [View] Displays and edits the user profile; reads from and writes to AuthViewModel.
-public class ProfileFragment extends Fragment {
+// [View] Settings: profile editor, dark/light mode toggle, logout.
+public class SettingsFragment extends Fragment {
 
-    private FragmentProfileBinding binding;
+    private FragmentSettingsBinding binding;
     private AuthViewModel authViewModel;
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        binding = FragmentProfileBinding.inflate(inflater, container, false);
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
+        binding = FragmentSettingsBinding.inflate(inflater, container, false);
         return binding.getRoot();
     }
 
@@ -44,16 +46,12 @@ public class ProfileFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Profile screens don't need a TodoRepository — pass null so the DB isn't opened here.
-        ViewModelFactory factory = new ViewModelFactory(null, new AuthRepositoryImpl());
+        ViewModelFactory factory = new ViewModelFactory(new AuthRepositoryImpl());
         authViewModel = new ViewModelProvider(this, factory).get(AuthViewModel.class);
 
         loadUserProfile();
 
-        binding.saveProfileButton.setOnClickListener(v -> saveProfile());
-        binding.logoutButton.setOnClickListener(v -> logout());
-        binding.profileResetPasswordButton.setOnClickListener(v -> resetPassword());
-
+        // Clear field errors as the user types
         clearErrorOnType(binding.editFirstNameLayout, binding.editFirstNameText);
         clearErrorOnType(binding.editLastNameLayout,  binding.editLastNameText);
         clearErrorOnType(binding.editUsernameLayout,  binding.editUsernameText);
@@ -66,6 +64,26 @@ public class ProfileFragment extends Fragment {
                 Toast.makeText(getContext(), error, Toast.LENGTH_LONG).show();
             }
         });
+
+        binding.saveProfileButton.setOnClickListener(v -> saveProfile());
+        binding.profileResetPasswordButton.setOnClickListener(v -> resetPassword());
+
+        // Reflect current night-mode state without triggering the listener
+        int nightMode = AppCompatDelegate.getDefaultNightMode();
+        binding.switchDarkMode.setChecked(nightMode == AppCompatDelegate.MODE_NIGHT_YES);
+
+        binding.switchDarkMode.setOnCheckedChangeListener((btn, isChecked) ->
+                AppCompatDelegate.setDefaultNightMode(
+                        isChecked ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO));
+
+        binding.btnBack.setOnClickListener(v ->
+                Navigation.findNavController(v).popBackStack());
+
+        binding.btnLogout.setOnClickListener(v -> {
+            authViewModel.logout();
+            // Clear the back-stack so the user can't navigate back after logout
+            Navigation.findNavController(v).navigate(R.id.action_settingsFragment_to_loginFragment);
+        });
     }
 
     private void loadUserProfile() {
@@ -74,6 +92,7 @@ public class ProfileFragment extends Fragment {
 
         binding.profileProgressBar.setVisibility(View.VISIBLE);
         authViewModel.getUserData(user.getUid()).observe(getViewLifecycleOwner(), data -> {
+            if (binding == null) return;
             binding.profileProgressBar.setVisibility(View.GONE);
             if (data != null) {
                 String firstName = (String) data.get("firstName");
@@ -82,8 +101,8 @@ public class ProfileFragment extends Fragment {
                 String school    = (String) data.get("school");
                 String email     = (String) data.get("email");
 
-                binding.profileName.setText(firstName + " " + lastName);
-                binding.profileUsername.setText("@" + username);
+                binding.tvProfileName.setText(firstName + " " + lastName);
+                binding.tvProfileUsername.setText("@" + username);
                 binding.editFirstNameText.setText(firstName);
                 binding.editLastNameText.setText(lastName);
                 binding.editUsernameText.setText(username);
@@ -106,12 +125,10 @@ public class ProfileFragment extends Fragment {
         String school    = binding.editSchoolText.getText().toString().trim();
 
         boolean hasError = false;
-
         if (firstName.isEmpty()) { binding.editFirstNameLayout.setError("First name required"); hasError = true; }
         if (lastName.isEmpty())  { binding.editLastNameLayout.setError("Last name required");   hasError = true; }
         if (username.isEmpty())  { binding.editUsernameLayout.setError("Username required");    hasError = true; }
         if (school.isEmpty())    { binding.editSchoolLayout.setError("School required");        hasError = true; }
-
         if (hasError) return;
 
         binding.saveProfileButton.setEnabled(false);
@@ -124,15 +141,10 @@ public class ProfileFragment extends Fragment {
                     binding.saveProfileButton.setEnabled(true);
                     if (success != null && success) {
                         Toast.makeText(getContext(), "Profile updated!", Toast.LENGTH_SHORT).show();
-                        binding.profileName.setText(firstName + " " + lastName);
-                        binding.profileUsername.setText("@" + username);
+                        binding.tvProfileName.setText(firstName + " " + lastName);
+                        binding.tvProfileUsername.setText("@" + username);
                     }
                 });
-    }
-
-    private void logout() {
-        authViewModel.logout();
-        Navigation.findNavController(requireView()).navigate(R.id.loginFragment);
     }
 
     private void resetPassword() {

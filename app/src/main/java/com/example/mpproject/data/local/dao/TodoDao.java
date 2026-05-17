@@ -44,4 +44,12 @@ public interface TodoDao {
     // Todos with a due date in a given range — used by the calendar screen
     @Query("SELECT * FROM todos WHERE userId = :userId AND dueDate BETWEEN :startMs AND :endMs")
     LiveData<List<TodoEntity>> getByDueDateRange(String userId, long startMs, long endMs);
+
+    // Update shared fields (non-date) for every todo in a recurrence group
+    @Query("UPDATE todos SET title = :title, description = :description, priority = :priority, moduleId = :moduleId, updatedAt = :updatedAt WHERE recurrenceGroupId = :groupId")
+    void updateGroupFields(String groupId, String title, String description, String priority, String moduleId, long updatedAt);
+
+    // Delete all todos belonging to a recurrence group
+    @Query("DELETE FROM todos WHERE recurrenceGroupId = :groupId")
+    void deleteByGroupId(String groupId);
 }

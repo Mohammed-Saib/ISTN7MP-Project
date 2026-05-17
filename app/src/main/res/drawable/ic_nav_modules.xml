@@ -1,0 +1,43 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Stack of books / modules -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M4,19L20,19"
+        android:strokeColor="?attr/colorOnSurface"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round" />
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M4,15L20,15"
+        android:strokeColor="?attr/colorOnSurface"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round" />
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M4,5L4,15"
+        android:strokeColor="?attr/colorOnSurface"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round" />
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M8,5L8,15"
+        android:strokeColor="?attr/colorOnSurface"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round" />
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M4,5L20,5"
+        android:strokeColor="?attr/colorOnSurface"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round" />
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M8,5C8,5 10,7 10,10C10,13 8,15 8,15"
+        android:strokeColor="?attr/colorOnSurface"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round" />
+</vector>

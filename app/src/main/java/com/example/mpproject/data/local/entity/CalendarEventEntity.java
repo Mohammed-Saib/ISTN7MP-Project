@@ -6,7 +6,7 @@ import androidx.room.ForeignKey;
 import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
-// A calendar event (lecture, exam, personal appointment).
+// A calendar event (lecture, exam, personal appointment). Can be recurring; all occurrences share recurrenceGroupId.
 // Can optionally be pushed to the device's native calendar via CalendarContract.
 @Entity(tableName = "calendar_events",
         foreignKeys = @ForeignKey(
@@ -34,8 +34,11 @@ public class CalendarEventEntity {
     private String color;                     // hex override; falls back to module color if null
     private Long deviceCalendarEventId;       // ID from CalendarContract after a device push; null if not pushed
     private boolean isPushedToDeviceCalendar; // true after a successful CalendarContract insert
-    private long createdAt;                   // unix ms
-    private long updatedAt;                   // unix ms
+    private String recurrencePattern;          // DAILY | WEEKLY | MONTHLY | YEARLY; null = non-recurring
+    private String recurrenceGroupId;          // shared UUID across all occurrences of a series
+    private Long recurrenceEndDate;            // unix ms; null if no end cap
+    private long createdAt;                    // unix ms
+    private long updatedAt;                    // unix ms
 
     public CalendarEventEntity() {}
 
@@ -63,6 +66,12 @@ public class CalendarEventEntity {
     public void setDeviceCalendarEventId(Long id) { this.deviceCalendarEventId = id; }
     public boolean isPushedToDeviceCalendar() { return isPushedToDeviceCalendar; }
     public void setPushedToDeviceCalendar(boolean pushed) { isPushedToDeviceCalendar = pushed; }
+    public String getRecurrencePattern() { return recurrencePattern; }
+    public void setRecurrencePattern(String recurrencePattern) { this.recurrencePattern = recurrencePattern; }
+    public String getRecurrenceGroupId() { return recurrenceGroupId; }
+    public void setRecurrenceGroupId(String recurrenceGroupId) { this.recurrenceGroupId = recurrenceGroupId; }
+    public Long getRecurrenceEndDate() { return recurrenceEndDate; }
+    public void setRecurrenceEndDate(Long recurrenceEndDate) { this.recurrenceEndDate = recurrenceEndDate; }
     public long getCreatedAt() { return createdAt; }
     public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }
     public long getUpdatedAt() { return updatedAt; }

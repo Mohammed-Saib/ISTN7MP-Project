@@ -22,4 +22,10 @@ public interface CalendarEventRepository {
 
     // Events linked to a specific module
     LiveData<List<CalendarEvent>> getAllByModule(String moduleId);
+
+    // Update shared non-date fields across every event in a recurrence group
+    void updateGroup(CalendarEvent representative);
+
+    // Delete all events in a recurrence group
+    void deleteGroup(String recurrenceGroupId, String userId);
 }

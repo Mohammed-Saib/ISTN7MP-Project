@@ -86,6 +86,42 @@ public class TodoRepositoryImpl implements TodoRepository {
         return Transformations.map(todoDao.getByDueDateRange(userId, startMs, endMs), this::toDomainList);
     }
 
+    @Override
+    public void updateGroup(Todo representative) {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            long now = System.currentTimeMillis();
+            todoDao.updateGroupFields(
+                    representative.getRecurrenceGroupId(),
+                    representative.getTitle(),
+                    representative.getDescription(),
+                    representative.getPriority(),
+                    representative.getModuleId(),
+                    now);
+            syncGroupToFirestore(representative, now);
+        });
+    }
+
+    @Override
+    public void deleteGroup(String recurrenceGroupId, String userId) {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            todoDao.deleteByGroupId(recurrenceGroupId);
+            try {
+                firestore.collection("users").document(userId)
+                        .collection("todos")
+                        .whereEqualTo("recurrenceGroupId", recurrenceGroupId)
+                        .get()
+                        .addOnSuccessListener(snap -> {
+                            for (com.google.firebase.firestore.DocumentSnapshot doc : snap.getDocuments()) {
+                                doc.getReference().delete();
+                            }
+                        })
+                        .addOnFailureListener(e -> Log.e(TAG, "Firestore group delete failed", e));
+            } catch (Exception e) {
+                Log.e(TAG, "Firestore group delete error", e);
+            }
+        });
+    }
+
     private void syncToFirestore(Todo todo) {
         try {
             Map<String, Object> data = new HashMap<>();
@@ -99,12 +135,39 @@ public class TodoRepositoryImpl implements TodoRepository {
             data.put("createdAt", todo.getCreatedAt());
             data.put("updatedAt", todo.getUpdatedAt());
 
+            data.put("recurrencePattern", todo.getRecurrencePattern());
+            data.put("recurrenceGroupId", todo.getRecurrenceGroupId());
+            data.put("recurrenceEndDate", todo.getRecurrenceEndDate());
+
             firestore.collection("users").document(todo.getUserId())
                     .collection("todos").document(todo.getTodoId())
                     .set(data)
                     .addOnFailureListener(e -> Log.e(TAG, "Firestore sync failed", e));
         } catch (Exception e) {
             Log.e(TAG, "Firestore sync error", e);
+        }
+    }
+
+    private void syncGroupToFirestore(Todo representative, long updatedAt) {
+        try {
+            firestore.collection("users").document(representative.getUserId())
+                    .collection("todos")
+                    .whereEqualTo("recurrenceGroupId", representative.getRecurrenceGroupId())
+                    .get()
+                    .addOnSuccessListener(snap -> {
+                        Map<String, Object> patch = new HashMap<>();
+                        patch.put("title", representative.getTitle());
+                        patch.put("description", representative.getDescription());
+                        patch.put("priority", representative.getPriority());
+                        patch.put("moduleId", representative.getModuleId());
+                        patch.put("updatedAt", updatedAt);
+                        for (com.google.firebase.firestore.DocumentSnapshot doc : snap.getDocuments()) {
+                            doc.getReference().update(patch);
+                        }
+                    })
+                    .addOnFailureListener(e -> Log.e(TAG, "Firestore group sync failed", e));
+        } catch (Exception e) {
+            Log.e(TAG, "Firestore group sync error", e);
         }
     }
 
@@ -119,6 +182,9 @@ public class TodoRepositoryImpl implements TodoRepository {
         // the stored completedAt with the current time.
         todo.setCompleted(e.isCompleted());
         todo.setCompletedAt(e.getCompletedAt());
+        todo.setRecurrencePattern(e.getRecurrencePattern());
+        todo.setRecurrenceGroupId(e.getRecurrenceGroupId());
+        todo.setRecurrenceEndDate(e.getRecurrenceEndDate());
         todo.setUpdatedAt(e.getUpdatedAt());
         return todo;
     }
@@ -142,6 +208,9 @@ public class TodoRepositoryImpl implements TodoRepository {
         e.setDueDate(todo.getDueDate());
         e.setCompleted(todo.isCompleted());
         e.setCompletedAt(todo.getCompletedAt());
+        e.setRecurrencePattern(todo.getRecurrencePattern());
+        e.setRecurrenceGroupId(todo.getRecurrenceGroupId());
+        e.setRecurrenceEndDate(todo.getRecurrenceEndDate());
         e.setCreatedAt(todo.getCreatedAt());
         e.setUpdatedAt(todo.getUpdatedAt());
         return e;
