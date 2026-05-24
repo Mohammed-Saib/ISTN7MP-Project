@@ -11,6 +11,7 @@ import com.example.mpproject.data.local.entity.TodoEntity;
 import com.example.mpproject.domain.model.Todo;
 import com.example.mpproject.domain.repository.TodoRepository;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.WriteBatch;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -111,59 +112,60 @@ public class TodoRepositoryImpl implements TodoRepository {
                         .whereEqualTo("recurrenceGroupId", recurrenceGroupId)
                         .get()
                         .addOnSuccessListener(snap -> {
+                            WriteBatch batch = firestore.batch();
                             for (com.google.firebase.firestore.DocumentSnapshot doc : snap.getDocuments()) {
-                                doc.getReference().delete();
+                                batch.delete(doc.getReference());
                             }
+                            batch.commit()
+                                    .addOnFailureListener(e -> Log.e(TAG, "Firestore group delete failed", e));
                         })
-                        .addOnFailureListener(e -> Log.e(TAG, "Firestore group delete failed", e));
+                        .addOnFailureListener(e -> Log.e(TAG, "Firestore group delete query failed", e));
             } catch (Exception e) {
                 Log.e(TAG, "Firestore group delete error", e);
             }
         });
     }
 
-    // If Room has no todos for this user, fetch them all from Firestore and insert.
-    public void syncFromFirestoreIfEmpty(String userId) {
-        AppDatabase.databaseWriteExecutor.execute(() -> {
-            if (todoDao.countByUser(userId) > 0) return;
-            firestore.collection("users").document(userId)
-                    .collection("todos")
-                    .get()
-                    .addOnSuccessListener(snap ->
-                            AppDatabase.databaseWriteExecutor.execute(() -> {
-                                for (com.google.firebase.firestore.DocumentSnapshot doc : snap.getDocuments()) {
-                                    try {
-                                        TodoEntity e = new TodoEntity();
-                                        e.setTodoId(doc.getId());
-                                        e.setUserId(userId);
-                                        e.setTitle(doc.getString("title"));
-                                        e.setDescription(doc.getString("description"));
-                                        e.setModuleId(doc.getString("moduleId"));
-                                        e.setPriority(doc.getString("priority"));
-                                        e.setDueDate(doc.getLong("dueDate"));
-                                        Boolean completed = doc.getBoolean("isCompleted");
-                                        e.setCompleted(completed != null && completed);
-                                        e.setCompletedAt(doc.getLong("completedAt"));
-                                        e.setRecurrencePattern(doc.getString("recurrencePattern"));
-                                        e.setRecurrenceGroupId(doc.getString("recurrenceGroupId"));
-                                        e.setRecurrenceEndDate(doc.getLong("recurrenceEndDate"));
-                                        Long createdAt = doc.getLong("createdAt");
-                                        e.setCreatedAt(createdAt != null ? createdAt : 0L);
-                                        Long updatedAt = doc.getLong("updatedAt");
-                                        e.setUpdatedAt(updatedAt != null ? updatedAt : 0L);
-                                        todoDao.insert(e);
-                                    } catch (Exception ex) {
-                                        Log.e(TAG, "Error restoring todo from Firestore", ex);
-                                    }
+    // Unconditional merge-sync from Firestore: fetches every todo for this user and upserts into Room.
+    public void syncFromFirestore(String userId) {
+        firestore.collection("users").document(userId)
+                .collection("todos")
+                .get()
+                .addOnSuccessListener(snap ->
+                        AppDatabase.databaseWriteExecutor.execute(() -> {
+                            for (com.google.firebase.firestore.DocumentSnapshot doc : snap.getDocuments()) {
+                                try {
+                                    TodoEntity e = new TodoEntity();
+                                    e.setTodoId(doc.getId());
+                                    e.setUserId(userId);
+                                    e.setTitle(doc.getString("title"));
+                                    e.setDescription(doc.getString("description"));
+                                    e.setModuleId(doc.getString("moduleId"));
+                                    e.setPriority(doc.getString("priority"));
+                                    e.setDueDate(doc.getLong("dueDate"));
+                                    Boolean completed = doc.getBoolean("isCompleted");
+                                    e.setCompleted(completed != null && completed);
+                                    e.setCompletedAt(doc.getLong("completedAt"));
+                                    e.setRecurrencePattern(doc.getString("recurrencePattern"));
+                                    e.setRecurrenceGroupId(doc.getString("recurrenceGroupId"));
+                                    e.setRecurrenceEndDate(doc.getLong("recurrenceEndDate"));
+                                    Long createdAt = doc.getLong("createdAt");
+                                    e.setCreatedAt(createdAt != null ? createdAt : 0L);
+                                    Long updatedAt = doc.getLong("updatedAt");
+                                    e.setUpdatedAt(updatedAt != null ? updatedAt : 0L);
+                                    todoDao.insert(e);
+                                } catch (Exception ex) {
+                                    Log.e(TAG, "Error syncing todo from Firestore", ex);
                                 }
-                            }))
-                    .addOnFailureListener(e -> Log.e(TAG, "Firestore todo restore failed", e));
-        });
+                            }
+                        }))
+                .addOnFailureListener(e -> Log.e(TAG, "Firestore todo sync failed", e));
     }
 
     private void syncToFirestore(Todo todo) {
         try {
             Map<String, Object> data = new HashMap<>();
+            data.put("userId", todo.getUserId());
             data.put("title", todo.getTitle());
             data.put("description", todo.getDescription());
             data.put("moduleId", todo.getModuleId());
@@ -189,22 +191,26 @@ public class TodoRepositoryImpl implements TodoRepository {
 
     private void syncGroupToFirestore(Todo representative, long updatedAt) {
         try {
+            Map<String, Object> patch = new HashMap<>();
+            patch.put("title", representative.getTitle());
+            patch.put("description", representative.getDescription());
+            patch.put("priority", representative.getPriority());
+            patch.put("moduleId", representative.getModuleId());
+            patch.put("updatedAt", updatedAt);
+
             firestore.collection("users").document(representative.getUserId())
                     .collection("todos")
                     .whereEqualTo("recurrenceGroupId", representative.getRecurrenceGroupId())
                     .get()
                     .addOnSuccessListener(snap -> {
-                        Map<String, Object> patch = new HashMap<>();
-                        patch.put("title", representative.getTitle());
-                        patch.put("description", representative.getDescription());
-                        patch.put("priority", representative.getPriority());
-                        patch.put("moduleId", representative.getModuleId());
-                        patch.put("updatedAt", updatedAt);
+                        WriteBatch batch = firestore.batch();
                         for (com.google.firebase.firestore.DocumentSnapshot doc : snap.getDocuments()) {
-                            doc.getReference().update(patch);
+                            batch.update(doc.getReference(), patch);
                         }
+                        batch.commit()
+                                .addOnFailureListener(e -> Log.e(TAG, "Firestore group sync failed", e));
                     })
-                    .addOnFailureListener(e -> Log.e(TAG, "Firestore group sync failed", e));
+                    .addOnFailureListener(e -> Log.e(TAG, "Firestore group sync query failed", e));
         } catch (Exception e) {
             Log.e(TAG, "Firestore group sync error", e);
         }
@@ -224,6 +230,7 @@ public class TodoRepositoryImpl implements TodoRepository {
         todo.setRecurrencePattern(e.getRecurrencePattern());
         todo.setRecurrenceGroupId(e.getRecurrenceGroupId());
         todo.setRecurrenceEndDate(e.getRecurrenceEndDate());
+        todo.setCreatedAt(e.getCreatedAt());
         todo.setUpdatedAt(e.getUpdatedAt());
         return todo;
     }

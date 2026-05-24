@@ -1,0 +1,10 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Material "view list" icon: small square + horizontal bar per row, 3 rows -->
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M3,5h2v2H3zM3,10h2v2H3zM3,15h2v2H3zM7,5h14v2H7zM7,10h14v2H7zM7,15h14v2H7z" />
+</vector>

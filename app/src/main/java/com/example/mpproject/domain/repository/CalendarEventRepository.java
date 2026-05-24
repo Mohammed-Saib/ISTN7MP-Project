@@ -9,6 +9,7 @@ import java.util.List;
 // [Domain] Contract for calendar event operations — implemented in the data layer, consumed by the ViewModel.
 public interface CalendarEventRepository {
     void insert(CalendarEvent event);
+    void insertBatch(List<CalendarEvent> events);
     void update(CalendarEvent event);
     void delete(CalendarEvent event);
 

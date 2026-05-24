@@ -11,6 +11,7 @@ import com.example.mpproject.data.local.entity.CalendarEventEntity;
 import com.example.mpproject.domain.model.CalendarEvent;
 import com.example.mpproject.domain.repository.CalendarEventRepository;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.WriteBatch;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,6 +36,16 @@ public class CalendarEventRepositoryImpl implements CalendarEventRepository {
         AppDatabase.databaseWriteExecutor.execute(() -> {
             calendarEventDao.insert(toEntity(event));
             syncToFirestore(event);
+        });
+    }
+
+    @Override
+    public void insertBatch(List<CalendarEvent> events) {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            List<CalendarEventEntity> entities = new ArrayList<>();
+            for (CalendarEvent e : events) entities.add(toEntity(e));
+            calendarEventDao.insertAll(entities);
+            for (CalendarEvent e : events) syncToFirestore(e);
         });
     }
 
@@ -106,65 +117,67 @@ public class CalendarEventRepositoryImpl implements CalendarEventRepository {
                         .whereEqualTo("recurrenceGroupId", recurrenceGroupId)
                         .get()
                         .addOnSuccessListener(snap -> {
+                            WriteBatch batch = firestore.batch();
                             for (com.google.firebase.firestore.DocumentSnapshot doc : snap.getDocuments()) {
-                                doc.getReference().delete();
+                                batch.delete(doc.getReference());
                             }
+                            batch.commit()
+                                    .addOnFailureListener(e -> Log.e(TAG, "Firestore group delete failed", e));
                         })
-                        .addOnFailureListener(e -> Log.e(TAG, "Firestore group delete failed", e));
+                        .addOnFailureListener(e -> Log.e(TAG, "Firestore group delete query failed", e));
             } catch (Exception e) {
                 Log.e(TAG, "Firestore group delete error", e);
             }
         });
     }
 
-    // If Room has no events for this user, fetch them all from Firestore and insert.
-    public void syncFromFirestoreIfEmpty(String userId) {
-        AppDatabase.databaseWriteExecutor.execute(() -> {
-            if (calendarEventDao.countByUser(userId) > 0) return;
-            firestore.collection("users").document(userId)
-                    .collection("calendar_events")
-                    .get()
-                    .addOnSuccessListener(snap ->
-                            AppDatabase.databaseWriteExecutor.execute(() -> {
-                                for (com.google.firebase.firestore.DocumentSnapshot doc : snap.getDocuments()) {
-                                    try {
-                                        CalendarEventEntity e = new CalendarEventEntity();
-                                        e.setEventId(doc.getId());
-                                        e.setUserId(userId);
-                                        e.setTitle(doc.getString("title"));
-                                        e.setDescription(doc.getString("description"));
-                                        e.setModuleId(doc.getString("moduleId"));
-                                        e.setType(doc.getString("type"));
-                                        e.setColor(doc.getString("color"));
-                                        Long startTime = doc.getLong("startTime");
-                                        e.setStartTime(startTime != null ? startTime : 0L);
-                                        e.setEndTime(doc.getLong("endTime"));
-                                        Boolean allDay = doc.getBoolean("isAllDay");
-                                        e.setAllDay(allDay != null && allDay);
-                                        Boolean pushed = doc.getBoolean("isPushedToDeviceCalendar");
-                                        e.setPushedToDeviceCalendar(pushed != null && pushed);
-                                        e.setDeviceCalendarEventId(doc.getLong("deviceCalendarEventId"));
-                                        e.setRecurrencePattern(doc.getString("recurrencePattern"));
-                                        e.setRecurrenceGroupId(doc.getString("recurrenceGroupId"));
-                                        e.setRecurrenceEndDate(doc.getLong("recurrenceEndDate"));
-                                        Long createdAt = doc.getLong("createdAt");
-                                        e.setCreatedAt(createdAt != null ? createdAt : 0L);
-                                        Long updatedAt = doc.getLong("updatedAt");
-                                        e.setUpdatedAt(updatedAt != null ? updatedAt : 0L);
-                                        calendarEventDao.insert(e);
-                                    } catch (Exception ex) {
-                                        Log.e(TAG, "Error restoring event from Firestore", ex);
-                                    }
+    // Unconditional merge-sync from Firestore: fetches every calendar event for this user and upserts into Room.
+    public void syncFromFirestore(String userId) {
+        firestore.collection("users").document(userId)
+                .collection("calendar_events")
+                .get()
+                .addOnSuccessListener(snap ->
+                        AppDatabase.databaseWriteExecutor.execute(() -> {
+                            for (com.google.firebase.firestore.DocumentSnapshot doc : snap.getDocuments()) {
+                                try {
+                                    CalendarEventEntity e = new CalendarEventEntity();
+                                    e.setEventId(doc.getId());
+                                    e.setUserId(userId);
+                                    e.setTitle(doc.getString("title"));
+                                    e.setDescription(doc.getString("description"));
+                                    e.setModuleId(doc.getString("moduleId"));
+                                    e.setType(doc.getString("type"));
+                                    e.setColor(doc.getString("color"));
+                                    Long startTime = doc.getLong("startTime");
+                                    e.setStartTime(startTime != null ? startTime : 0L);
+                                    e.setEndTime(doc.getLong("endTime"));
+                                    Boolean allDay = doc.getBoolean("isAllDay");
+                                    e.setAllDay(allDay != null && allDay);
+                                    Boolean pushed = doc.getBoolean("isPushedToDeviceCalendar");
+                                    e.setPushedToDeviceCalendar(pushed != null && pushed);
+                                    e.setDeviceCalendarEventId(doc.getLong("deviceCalendarEventId"));
+                                    e.setRecurrencePattern(doc.getString("recurrencePattern"));
+                                    e.setRecurrenceGroupId(doc.getString("recurrenceGroupId"));
+                                    e.setRecurrenceEndDate(doc.getLong("recurrenceEndDate"));
+                                    e.setLinkedAssessmentId(doc.getString("linkedAssessmentId"));
+                                    Long createdAt = doc.getLong("createdAt");
+                                    e.setCreatedAt(createdAt != null ? createdAt : 0L);
+                                    Long updatedAt = doc.getLong("updatedAt");
+                                    e.setUpdatedAt(updatedAt != null ? updatedAt : 0L);
+                                    calendarEventDao.insert(e);
+                                } catch (Exception ex) {
+                                    Log.e(TAG, "Error syncing event from Firestore", ex);
                                 }
-                            }))
-                    .addOnFailureListener(e -> Log.e(TAG, "Firestore event restore failed", e));
-        });
+                            }
+                        }))
+                .addOnFailureListener(e -> Log.e(TAG, "Firestore event sync failed", e));
     }
 
     // Sync to users/{userId}/calendar_events/{eventId} in Firestore
     private void syncToFirestore(CalendarEvent event) {
         try {
             Map<String, Object> data = new HashMap<>();
+            data.put("userId", event.getUserId());
             data.put("title", event.getTitle());
             data.put("description", event.getDescription());
             data.put("moduleId", event.getModuleId());
@@ -178,6 +191,7 @@ public class CalendarEventRepositoryImpl implements CalendarEventRepository {
             data.put("recurrencePattern", event.getRecurrencePattern());
             data.put("recurrenceGroupId", event.getRecurrenceGroupId());
             data.put("recurrenceEndDate", event.getRecurrenceEndDate());
+            data.put("linkedAssessmentId", event.getLinkedAssessmentId());
             data.put("createdAt", event.getCreatedAt());
             data.put("updatedAt", event.getUpdatedAt());
 
@@ -192,22 +206,26 @@ public class CalendarEventRepositoryImpl implements CalendarEventRepository {
 
     private void syncGroupToFirestore(CalendarEvent representative, long updatedAt) {
         try {
+            Map<String, Object> patch = new HashMap<>();
+            patch.put("title", representative.getTitle());
+            patch.put("description", representative.getDescription());
+            patch.put("type", representative.getType());
+            patch.put("moduleId", representative.getModuleId());
+            patch.put("updatedAt", updatedAt);
+
             firestore.collection("users").document(representative.getUserId())
                     .collection("calendar_events")
                     .whereEqualTo("recurrenceGroupId", representative.getRecurrenceGroupId())
                     .get()
                     .addOnSuccessListener(snap -> {
-                        Map<String, Object> patch = new HashMap<>();
-                        patch.put("title", representative.getTitle());
-                        patch.put("description", representative.getDescription());
-                        patch.put("type", representative.getType());
-                        patch.put("moduleId", representative.getModuleId());
-                        patch.put("updatedAt", updatedAt);
+                        WriteBatch batch = firestore.batch();
                         for (com.google.firebase.firestore.DocumentSnapshot doc : snap.getDocuments()) {
-                            doc.getReference().update(patch);
+                            batch.update(doc.getReference(), patch);
                         }
+                        batch.commit()
+                                .addOnFailureListener(e -> Log.e(TAG, "Firestore group sync failed", e));
                     })
-                    .addOnFailureListener(e -> Log.e(TAG, "Firestore group sync failed", e));
+                    .addOnFailureListener(e -> Log.e(TAG, "Firestore group sync query failed", e));
         } catch (Exception e) {
             Log.e(TAG, "Firestore group sync error", e);
         }
@@ -228,6 +246,8 @@ public class CalendarEventRepositoryImpl implements CalendarEventRepository {
         event.setRecurrencePattern(e.getRecurrencePattern());
         event.setRecurrenceGroupId(e.getRecurrenceGroupId());
         event.setRecurrenceEndDate(e.getRecurrenceEndDate());
+        event.setLinkedAssessmentId(e.getLinkedAssessmentId());
+        event.setCreatedAt(e.getCreatedAt());
         event.setUpdatedAt(e.getUpdatedAt());
         return event;
     }
@@ -257,6 +277,7 @@ public class CalendarEventRepositoryImpl implements CalendarEventRepository {
         e.setRecurrencePattern(event.getRecurrencePattern());
         e.setRecurrenceGroupId(event.getRecurrenceGroupId());
         e.setRecurrenceEndDate(event.getRecurrenceEndDate());
+        e.setLinkedAssessmentId(event.getLinkedAssessmentId());
         e.setCreatedAt(event.getCreatedAt());
         e.setUpdatedAt(event.getUpdatedAt());
         return e;

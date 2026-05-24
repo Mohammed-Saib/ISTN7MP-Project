@@ -1,5 +1,7 @@
 package com.example.mpproject.presentation.view.auth;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -19,9 +21,12 @@ import androidx.navigation.Navigation;
 
 import com.example.mpproject.R;
 import com.example.mpproject.data.local.AppDatabase;
+import com.example.mpproject.data.repository.AssessmentRepositoryImpl;
 import com.example.mpproject.data.repository.AuthRepositoryImpl;
 import com.example.mpproject.data.repository.CalendarEventRepositoryImpl;
+import com.example.mpproject.data.repository.ModuleNoteRepositoryImpl;
 import com.example.mpproject.data.repository.ModuleRepositoryImpl;
+import com.example.mpproject.data.repository.PersonalNoteRepositoryImpl;
 import com.example.mpproject.data.repository.TodoRepositoryImpl;
 import com.example.mpproject.databinding.FragmentLoginBinding;
 import com.example.mpproject.presentation.viewmodel.AuthViewModel;
@@ -91,11 +96,25 @@ public class LoginFragment extends Fragment {
             if (user != null) {
                 binding.authProgressBar.setVisibility(View.GONE);
                 Toast.makeText(getContext(), "Logged in successfully!", Toast.LENGTH_SHORT).show();
-                // Restore any data lost from a DB migration or clean reinstall
+
+                // Save the "remember me" preference so MainActivity knows whether to keep the session on next launch
+                boolean rememberMe = binding.cbRememberMe.isChecked();
+                SharedPreferences prefs = requireContext()
+                        .getSharedPreferences("app_prefs", Context.MODE_PRIVATE);
+                prefs.edit().putBoolean("pref_remember_me", rememberMe).apply();
+
+                // Unconditional merge-sync from Firestore so data added on other devices appears here.
+                // All FK children sync only after modules are committed to Room — Room enforces
+                // PRAGMA foreign_keys = ON so inserts with a non-null moduleId fail silently
+                // if the parent module row isn't present yet.
                 AppDatabase db = AppDatabase.getDatabase(requireContext());
-                new ModuleRepositoryImpl(db.moduleDao()).syncFromFirestoreIfEmpty(user.getUid());
-                new TodoRepositoryImpl(db.todoDao()).syncFromFirestoreIfEmpty(user.getUid());
-                new CalendarEventRepositoryImpl(db.calendarEventDao()).syncFromFirestoreIfEmpty(user.getUid());
+                new ModuleRepositoryImpl(db.moduleDao()).syncFromFirestore(user.getUid(), () -> {
+                    new AssessmentRepositoryImpl(db.assessmentDao()).syncFromFirestore(user.getUid());
+                    new ModuleNoteRepositoryImpl(db.moduleNoteDao()).syncFromFirestore(user.getUid());
+                    new PersonalNoteRepositoryImpl(db.personalNoteDao()).syncFromFirestore(user.getUid());
+                    new TodoRepositoryImpl(db.todoDao()).syncFromFirestore(user.getUid());
+                    new CalendarEventRepositoryImpl(db.calendarEventDao()).syncFromFirestore(user.getUid());
+                });
                 Navigation.findNavController(requireView())
                         .navigate(R.id.action_loginFragment_to_homeFragment);
             }

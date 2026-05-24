@@ -76,10 +76,44 @@ public class PersonalNoteRepositoryImpl implements PersonalNoteRepository {
         return Transformations.map(personalNoteDao.getAllByModule(moduleId), this::toDomainList);
     }
 
+    // Unconditional merge-sync from Firestore: fetches every personal note for this user and upserts into Room.
+    public void syncFromFirestore(String userId) {
+        firestore.collection("users").document(userId)
+                .collection("personal_notes")
+                .get()
+                .addOnSuccessListener(snap ->
+                        AppDatabase.databaseWriteExecutor.execute(() -> {
+                            for (com.google.firebase.firestore.DocumentSnapshot doc : snap.getDocuments()) {
+                                try {
+                                    PersonalNoteEntity e = new PersonalNoteEntity();
+                                    e.setNoteId(doc.getId());
+                                    e.setUserId(userId);
+                                    e.setModuleId(doc.getString("moduleId"));
+                                    e.setTitle(doc.getString("title"));
+                                    e.setContent(doc.getString("content"));
+                                    e.setShareCode(doc.getString("shareCode"));
+                                    Boolean pinned = doc.getBoolean("isPinned");
+                                    e.setPinned(pinned != null && pinned);
+                                    Boolean shared = doc.getBoolean("isShared");
+                                    e.setShared(shared != null && shared);
+                                    Long createdAt = doc.getLong("createdAt");
+                                    e.setCreatedAt(createdAt != null ? createdAt : 0L);
+                                    Long updatedAt = doc.getLong("updatedAt");
+                                    e.setUpdatedAt(updatedAt != null ? updatedAt : 0L);
+                                    personalNoteDao.insert(e);
+                                } catch (Exception ex) {
+                                    Log.e(TAG, "Error syncing personal note from Firestore", ex);
+                                }
+                            }
+                        }))
+                .addOnFailureListener(e -> Log.e(TAG, "Firestore personal notes sync failed", e));
+    }
+
     // Sync to users/{userId}/personal_notes/{noteId} in Firestore
     private void syncToFirestore(PersonalNote note) {
         try {
             Map<String, Object> data = new HashMap<>();
+            data.put("userId", note.getUserId());
             data.put("title", note.getTitle());
             data.put("content", note.getContent());
             data.put("moduleId", note.getModuleId());
@@ -106,6 +140,7 @@ public class PersonalNoteRepositoryImpl implements PersonalNoteRepository {
         note.setShareCode(e.getShareCode());
         note.setPinned(e.isPinned());
         note.setShared(e.isShared());
+        note.setCreatedAt(e.getCreatedAt());
         note.setUpdatedAt(e.getUpdatedAt());
         return note;
     }

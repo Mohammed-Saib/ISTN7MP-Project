@@ -60,6 +60,19 @@
         <action
             android:id="@+id/action_modulesFragment_to_settingsFragment"
             app:destination="@id/settingsFragment" />
+        <action
+            android:id="@+id/action_modulesFragment_to_moduleDetailFragment"
+            app:destination="@id/moduleDetailFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/moduleDetailFragment"
+        android:name="com.example.mpproject.presentation.view.modules.ModuleDetailFragment"
+        android:label="Module Detail"
+        tools:layout="@layout/fragment_module_detail">
+        <argument
+            android:name="moduleId"
+            app:argType="string" />
     </fragment>
 
     <fragment

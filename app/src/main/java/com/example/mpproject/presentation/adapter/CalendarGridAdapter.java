@@ -10,32 +10,52 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.mpproject.R;
 import com.example.mpproject.presentation.view.calendar.CalendarDayItem;
 
-import java.util.ArrayList;
 import java.util.List;
 
 // [Adapter] Renders the 42-cell (6-row × 7-column) month grid.
 // Each cell is a CalendarDayItem; the GridLayoutManager handles the 7-column split.
-public class CalendarGridAdapter extends RecyclerView.Adapter<CalendarGridAdapter.DayViewHolder> {
+public class CalendarGridAdapter extends ListAdapter<CalendarDayItem, CalendarGridAdapter.DayViewHolder> {
 
     public interface OnDayClickListener {
         void onDayClick(int dayOfMonth);
     }
 
-    private List<CalendarDayItem> items = new ArrayList<>();
-    private OnDayClickListener listener;
+    private static final DiffUtil.ItemCallback<CalendarDayItem> DIFF =
+            new DiffUtil.ItemCallback<CalendarDayItem>() {
+                @Override
+                public boolean areItemsTheSame(@NonNull CalendarDayItem oldItem, @NonNull CalendarDayItem newItem) {
+                    // Padding cells are interchangeable blank slots
+                    if (oldItem.isPadding() && newItem.isPadding()) return true;
+                    if (oldItem.isPadding() || newItem.isPadding()) return false;
+                    // Real days are the same slot when they represent the same day in the same month context
+                    return oldItem.getDayOfMonth() == newItem.getDayOfMonth()
+                            && oldItem.isCurrentMonth() == newItem.isCurrentMonth();
+                }
+
+                @Override
+                public boolean areContentsTheSame(@NonNull CalendarDayItem oldItem, @NonNull CalendarDayItem newItem) {
+                    if (oldItem.isPadding() && newItem.isPadding()) return true;
+                    return oldItem.getDayOfMonth() == newItem.getDayOfMonth()
+                            && oldItem.isCurrentMonth() == newItem.isCurrentMonth()
+                            && oldItem.isToday() == newItem.isToday()
+                            && oldItem.isSelected() == newItem.isSelected()
+                            && oldItem.hasTodo() == newItem.hasTodo()
+                            && oldItem.getEventDotColors().equals(newItem.getEventDotColors());
+                }
+            };
+
+    private final OnDayClickListener listener;
 
     public CalendarGridAdapter(OnDayClickListener listener) {
+        super(DIFF);
         this.listener = listener;
-    }
-
-    public void submitList(List<CalendarDayItem> newItems) {
-        items = newItems != null ? newItems : new ArrayList<>();
-        notifyDataSetChanged();
     }
 
     @NonNull
@@ -48,12 +68,7 @@ public class CalendarGridAdapter extends RecyclerView.Adapter<CalendarGridAdapte
 
     @Override
     public void onBindViewHolder(@NonNull DayViewHolder holder, int position) {
-        holder.bind(items.get(position));
-    }
-
-    @Override
-    public int getItemCount() {
-        return items.size();
+        holder.bind(getItem(position));
     }
 
     class DayViewHolder extends RecyclerView.ViewHolder {

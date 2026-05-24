@@ -46,6 +46,8 @@ public class CalendarViewModel extends ViewModel {
     public final MediatorLiveData<List<CalendarDayItem>> gridItems = new MediatorLiveData<>();
     // Derived: agenda rows for the selected day
     public final MediatorLiveData<List<AgendaItem>> selectedDayItems = new MediatorLiveData<>();
+    // Derived: all events + active todos from today onwards, sorted by time — used by the list view
+    public final MediatorLiveData<List<AgendaItem>> upcomingItems = new MediatorLiveData<>();
 
     public CalendarViewModel(CalendarEventRepository eventRepo,
                              TodoRepository todoRepo,
@@ -77,6 +79,10 @@ public class CalendarViewModel extends ViewModel {
         gridItems.addSource(completedTodos, t -> rebuildGrid());
         gridItems.addSource(displayedMonth, m -> rebuildGrid());
         gridItems.addSource(selectedDay,    d -> rebuildGrid()); // refreshes selection highlight
+
+        // Upcoming list rebuilds when events or active todos change
+        upcomingItems.addSource(allEvents,   e -> rebuildUpcoming());
+        upcomingItems.addSource(activeTodos, t -> rebuildUpcoming());
     }
 
     // ── Public state accessors ───────────────────────────────────────────────
@@ -151,7 +157,8 @@ public class CalendarViewModel extends ViewModel {
         }
     }
 
-    // Pre-create all instances of a recurring event (eager strategy, capped at 100)
+    // Pre-create all instances of a recurring event (eager strategy, capped at 100).
+    // Collected into a list and inserted as a single batch to avoid 100 separate DB transactions.
     private void createRecurringEvents(String title, String type, long startTime, Long endTime,
                                        boolean allDay, String moduleId, String description,
                                        String recurrencePattern, Long recurrenceEndDate) {
@@ -162,6 +169,7 @@ public class CalendarViewModel extends ViewModel {
         long now = System.currentTimeMillis();
         int count = 0;
 
+        List<CalendarEvent> batch = new ArrayList<>();
         while (count < 100) {
             long curStart = cur.getTimeInMillis();
             if (recurrenceEndDate != null && curStart > recurrenceEndDate) break;
@@ -176,7 +184,7 @@ public class CalendarViewModel extends ViewModel {
             e.setRecurrenceGroupId(groupId);
             e.setRecurrenceEndDate(recurrenceEndDate);
             e.setUpdatedAt(now);
-            eventRepo.insert(e);
+            batch.add(e);
             count++;
 
             switch (recurrencePattern) {
@@ -184,9 +192,10 @@ public class CalendarViewModel extends ViewModel {
                 case "WEEKLY":  cur.add(Calendar.WEEK_OF_YEAR, 1); break;
                 case "MONTHLY": cur.add(Calendar.MONTH, 1); break;
                 case "YEARLY":  cur.add(Calendar.YEAR, 1); break;
-                default: return;
+                default: break;
             }
         }
+        if (!batch.isEmpty()) eventRepo.insertBatch(batch);
     }
 
     private void scheduleNextTodoOccurrence(Todo completed) {
@@ -311,6 +320,38 @@ public class CalendarViewModel extends ViewModel {
         return false;
     }
 
+    // Builds the upcoming list: events and active todos from today midnight onwards, sorted by time.
+    private void rebuildUpcoming() {
+        long todayStart = getTodayStart();
+        List<AgendaItem> items = new ArrayList<>();
+
+        List<CalendarEvent> events = allEvents.getValue();
+        if (events != null) {
+            for (CalendarEvent e : events) {
+                if (e.getStartTime() >= todayStart) items.add(AgendaItem.fromEvent(e));
+            }
+        }
+
+        List<Todo> todos = activeTodos.getValue();
+        if (todos != null) {
+            for (Todo t : todos) {
+                if (t.getDueDate() != null && t.getDueDate() >= todayStart) items.add(AgendaItem.fromTodo(t));
+            }
+        }
+
+        Collections.sort(items, (a, b) -> Long.compare(a.getSortKey(), b.getSortKey()));
+        upcomingItems.setValue(items);
+    }
+
+    private long getTodayStart() {
+        Calendar c = Calendar.getInstance();
+        c.set(Calendar.HOUR_OF_DAY, 0);
+        c.set(Calendar.MINUTE, 0);
+        c.set(Calendar.SECOND, 0);
+        c.set(Calendar.MILLISECOND, 0);
+        return c.getTimeInMillis();
+    }
+
     // ── Helpers ─────────────────────────────────────────────────────────────
 
     private boolean isSameDay(long millis, Calendar day) {
@@ -328,6 +369,9 @@ public class CalendarViewModel extends ViewModel {
             case "EXAM":            return R.color.event_exam;
             case "ASSIGNMENT_DUE":  return R.color.event_assignment;
             case "PERSONAL":        return R.color.event_personal;
+            case "QUIZ":            return R.color.event_quiz;
+            case "TEST":            return R.color.event_test;
+            case "LAB":             return R.color.event_lab;
             default:                return R.color.event_lecture; // LECTURE + OTHER
         }
     }

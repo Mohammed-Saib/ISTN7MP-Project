@@ -6,12 +6,14 @@ import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
 
+import com.example.mpproject.data.local.dao.AssessmentDao;
 import com.example.mpproject.data.local.dao.CalendarEventDao;
 import com.example.mpproject.data.local.dao.ModuleDao;
 import com.example.mpproject.data.local.dao.ModuleNoteDao;
 import com.example.mpproject.data.local.dao.PersonalNoteDao;
 import com.example.mpproject.data.local.dao.TodoDao;
 import com.example.mpproject.data.local.dao.UserDao;
+import com.example.mpproject.data.local.entity.AssessmentEntity;
 import com.example.mpproject.data.local.entity.CalendarEventEntity;
 import com.example.mpproject.data.local.entity.ModuleEntity;
 import com.example.mpproject.data.local.entity.ModuleNoteEntity;
@@ -22,7 +24,7 @@ import com.example.mpproject.data.local.entity.UserEntity;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-// Version bumped to 3 — adds recurrencePattern/recurrenceGroupId/recurrenceEndDate to todos and calendar_events
+// Version bumped to 5 — adds assessments table; adds linkedAssessmentId to calendar_events
 @Database(
         entities = {
                 UserEntity.class,
@@ -30,9 +32,10 @@ import java.util.concurrent.Executors;
                 ModuleNoteEntity.class,
                 PersonalNoteEntity.class,
                 TodoEntity.class,
-                CalendarEventEntity.class
+                CalendarEventEntity.class,
+                AssessmentEntity.class
         },
-        version = 3,
+        version = 5,
         exportSchema = true
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -43,6 +46,7 @@ public abstract class AppDatabase extends RoomDatabase {
     public abstract PersonalNoteDao personalNoteDao();
     public abstract TodoDao todoDao();
     public abstract CalendarEventDao calendarEventDao();
+    public abstract AssessmentDao assessmentDao();
 
     private static volatile AppDatabase INSTANCE;
 
@@ -58,7 +62,14 @@ public abstract class AppDatabase extends RoomDatabase {
                                     context.getApplicationContext(),
                                     AppDatabase.class,
                                     "notesapp_database")
-                            .fallbackToDestructiveMigration() // dev only — wipes DB on schema change
+                            // Explicit migration preserves user data across schema upgrades.
+                            // If a device somehow has a version older than 2, Room will throw
+                            // IllegalStateException — the user must reinstall. Data is in Firestore
+                            // and will be restored from the cloud on first login.
+                            .addMigrations(
+                                    DatabaseMigrations.MIGRATION_2_3,
+                                    DatabaseMigrations.MIGRATION_3_4,
+                                    DatabaseMigrations.MIGRATION_4_5)
                             .build();
                 }
             }

@@ -28,7 +28,11 @@ import com.example.mpproject.presentation.viewmodel.CalendarViewModelFactory;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
+import android.text.Editable;
+import android.text.TextWatcher;
+
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
@@ -36,6 +40,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import com.example.mpproject.domain.model.Module;
+import com.example.mpproject.presentation.view.calendar.AgendaItem;
 
 // [View] Calendar screen — month grid + day agenda. All state lives in CalendarViewModel.
 public class CalendarFragment extends Fragment {
@@ -45,8 +50,11 @@ public class CalendarFragment extends Fragment {
     private CalendarGridAdapter gridAdapter;
     private AgendaAdapter agendaAdapter;
 
-    // Maps moduleId → module name for resolving module chips in the agenda
-    private final Map<String, String> moduleNameMap = new HashMap<>();
+    // true = list (upcoming) mode; false = calendar grid + day agenda mode (default)
+    private boolean isListMode = false;
+
+    private final List<AgendaItem> fullUpcomingList = new ArrayList<>();
+    private String searchQuery = "";
 
     private static final SimpleDateFormat MONTH_FMT =
             new SimpleDateFormat("MMMM yyyy", Locale.getDefault());
@@ -125,12 +133,20 @@ public class CalendarFragment extends Fragment {
         viewModel.gridItems.observe(getViewLifecycleOwner(),
                 cells -> gridAdapter.submitList(cells));
 
-        // Agenda items — update when selected day changes
+        // Agenda items — update when selected day changes (ignored in list mode)
         viewModel.selectedDayItems.observe(getViewLifecycleOwner(), items -> {
+            if (isListMode) return;
             agendaAdapter.submitList(items);
             binding.tvNoEvents.setVisibility(items.isEmpty() ? View.VISIBLE : View.GONE);
-            // After agenda updates, resolve module names for visible event rows
-            resolveModuleNames();
+            binding.tvNoEvents.setText("Nothing scheduled");
+        });
+
+        // Upcoming items — used by the list view (ignored in calendar mode)
+        viewModel.upcomingItems.observe(getViewLifecycleOwner(), items -> {
+            fullUpcomingList.clear();
+            if (items != null) fullUpcomingList.addAll(items);
+            if (!isListMode) return;
+            applyListFilter();
         });
 
         // Month label
@@ -148,13 +164,13 @@ public class CalendarFragment extends Fragment {
             binding.tvSelectedDate.setText(label);
         });
 
-        // Build moduleId → name map for agenda chips
+        // Pass moduleId → name map to adapter so chips resolve correctly at bind time
         viewModel.modules.observe(getViewLifecycleOwner(), modules -> {
-            moduleNameMap.clear();
+            Map<String, String> map = new HashMap<>();
             if (modules != null) {
-                for (Module m : modules) moduleNameMap.put(m.getModuleId(), m.getName());
+                for (Module m : modules) map.put(m.getModuleId(), m.getName());
             }
-            resolveModuleNames();
+            agendaAdapter.setModuleNameMap(map);
         });
     }
 
@@ -167,6 +183,20 @@ public class CalendarFragment extends Fragment {
         binding.btnPrevMonth.setOnClickListener(v -> viewModel.navigateMonth(-1));
         binding.btnNextMonth.setOnClickListener(v -> viewModel.navigateMonth(1));
 
+        binding.btnToggleView.setOnClickListener(v -> {
+            isListMode = !isListMode;
+            applyViewMode();
+        });
+
+        binding.etSearchList.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                searchQuery = s.toString().trim().toLowerCase();
+                if (isListMode) applyListFilter();
+            }
+            @Override public void afterTextChanged(Editable s) {}
+        });
+
         // FAB opens the bottom sheet with no pre-filled event (add mode)
         binding.fabAddEvent.setOnClickListener(v -> {
             viewModel.setEditingEvent(null);
@@ -175,23 +205,65 @@ public class CalendarFragment extends Fragment {
         });
     }
 
-    // Walks visible agenda event rows and fills module name chips from the local map
-    private void resolveModuleNames() {
-        int count = binding.rvDayAgenda.getChildCount();
-        for (int i = 0; i < count; i++) {
-            View child = binding.rvDayAgenda.getChildAt(i);
-            View tvModule = child.findViewById(com.example.mpproject.R.id.tv_event_module);
-            if (tvModule instanceof android.widget.TextView) {
-                Object tag = tvModule.getTag();
-                if (tag instanceof String) {
-                    String name = moduleNameMap.get((String) tag);
-                    if (name != null) {
-                        ((android.widget.TextView) tvModule).setText(name);
-                        tvModule.setVisibility(View.VISIBLE);
-                    }
+    // Switches between calendar-grid mode and upcoming-list mode
+    private void applyViewMode() {
+        // Tell adapter whether to show the date on event cards (needed in list mode, redundant in day mode)
+        agendaAdapter.setShowDate(isListMode);
+
+        if (isListMode) {
+            binding.llCalendarSection.setVisibility(View.GONE);
+            binding.llMonthNav.setVisibility(View.GONE);
+            binding.tvSelectedDate.setText("Upcoming");
+            binding.tilSearchList.setVisibility(View.VISIBLE);
+            // Icon changes to calendar so the user knows tapping returns to grid view
+            binding.btnToggleView.setImageResource(R.drawable.ic_nav_calendar);
+            applyListFilter();
+        } else {
+            binding.llCalendarSection.setVisibility(View.VISIBLE);
+            binding.llMonthNav.setVisibility(View.VISIBLE);
+            binding.tilSearchList.setVisibility(View.GONE);
+            binding.etSearchList.setText("");
+            searchQuery = "";
+            // Icon changes to list so the user knows tapping switches to list view
+            binding.btnToggleView.setImageResource(R.drawable.ic_view_list);
+            // Restore the selected-day header label
+            Calendar day = viewModel.getSelectedDay().getValue();
+            if (day != null) {
+                Calendar today = Calendar.getInstance();
+                boolean isToday = day.get(Calendar.YEAR) == today.get(Calendar.YEAR)
+                        && day.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR);
+                binding.tvSelectedDate.setText(isToday
+                        ? "Today, " + new java.text.SimpleDateFormat("d MMM", Locale.getDefault()).format(day.getTime())
+                        : AGENDA_DATE_FMT.format(day.getTime()));
+            }
+            List<AgendaItem> items = viewModel.selectedDayItems.getValue();
+            if (items != null) {
+                agendaAdapter.submitList(items);
+                binding.tvNoEvents.setVisibility(items.isEmpty() ? View.VISIBLE : View.GONE);
+                binding.tvNoEvents.setText("Nothing scheduled");
+            }
+        }
+    }
+
+    private void applyListFilter() {
+        if (binding == null) return;
+        List<AgendaItem> result;
+        if (searchQuery.isEmpty()) {
+            result = new ArrayList<>(fullUpcomingList);
+        } else {
+            result = new ArrayList<>();
+            for (AgendaItem item : fullUpcomingList) {
+                String title = item.getType() == AgendaItem.TYPE_EVENT
+                        ? item.getEvent().getTitle()
+                        : item.getTodo().getTitle();
+                if (title != null && title.toLowerCase().contains(searchQuery)) {
+                    result.add(item);
                 }
             }
         }
+        agendaAdapter.submitList(result);
+        binding.tvNoEvents.setVisibility(result.isEmpty() ? View.VISIBLE : View.GONE);
+        binding.tvNoEvents.setText(searchQuery.isEmpty() ? "Nothing upcoming" : "No results");
     }
 
     @Override

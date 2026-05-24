@@ -38,5 +38,6 @@ public class PersonalNote {
     public void setShareCode(String shareCode) { this.shareCode = shareCode; }
     public void setPinned(boolean pinned) { isPinned = pinned; }
     public void setShared(boolean shared) { isShared = shared; }
+    public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }
     public void setUpdatedAt(long updatedAt) { this.updatedAt = updatedAt; }
 }

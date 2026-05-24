@@ -43,6 +43,7 @@ public class Todo {
     public void setDescription(String description) { this.description = description; }
     public void setPriority(String priority) { this.priority = priority; }
     public void setDueDate(Long dueDate) { this.dueDate = dueDate; }
+    public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }
     public void setUpdatedAt(long updatedAt) { this.updatedAt = updatedAt; }
 
     // Set completion state. Callers must also set completedAt explicitly (avoids the

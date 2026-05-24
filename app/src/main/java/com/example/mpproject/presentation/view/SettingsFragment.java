@@ -1,5 +1,6 @@
 package com.example.mpproject.presentation.view;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -28,7 +29,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-// [View] Settings: profile editor, dark/light mode toggle, logout.
+// [View] Settings: profile overview with collapsible edit form, dark/light mode toggle, logout.
 public class SettingsFragment extends Fragment {
 
     private FragmentSettingsBinding binding;
@@ -51,7 +52,13 @@ public class SettingsFragment extends Fragment {
 
         loadUserProfile();
 
-        // Clear field errors as the user types
+        // Edit Profile toggle — shows/hides the edit fields section
+        binding.btnEditProfile.setOnClickListener(v -> {
+            boolean isShowing = binding.llEditFields.getVisibility() == View.VISIBLE;
+            binding.llEditFields.setVisibility(isShowing ? View.GONE : View.VISIBLE);
+            binding.btnEditProfile.setText(isShowing ? "Edit Profile" : "Cancel");
+        });
+
         clearErrorOnType(binding.editFirstNameLayout, binding.editFirstNameText);
         clearErrorOnType(binding.editLastNameLayout,  binding.editLastNameText);
         clearErrorOnType(binding.editUsernameLayout,  binding.editUsernameText);
@@ -68,7 +75,6 @@ public class SettingsFragment extends Fragment {
         binding.saveProfileButton.setOnClickListener(v -> saveProfile());
         binding.profileResetPasswordButton.setOnClickListener(v -> resetPassword());
 
-        // Reflect current night-mode state without triggering the listener
         int nightMode = AppCompatDelegate.getDefaultNightMode();
         binding.switchDarkMode.setChecked(nightMode == AppCompatDelegate.MODE_NIGHT_YES);
 
@@ -80,8 +86,10 @@ public class SettingsFragment extends Fragment {
                 Navigation.findNavController(v).popBackStack());
 
         binding.btnLogout.setOnClickListener(v -> {
+            SharedPreferences prefs = requireContext()
+                    .getSharedPreferences("app_prefs", requireContext().MODE_PRIVATE);
+            prefs.edit().putBoolean("pref_remember_me", false).apply();
             authViewModel.logout();
-            // Clear the back-stack so the user can't navigate back after logout
             Navigation.findNavController(v).navigate(R.id.action_settingsFragment_to_loginFragment);
         });
     }
@@ -101,19 +109,23 @@ public class SettingsFragment extends Fragment {
                 String school    = (String) data.get("school");
                 String email     = (String) data.get("email");
 
-                binding.tvProfileName.setText(firstName + " " + lastName);
-                binding.tvProfileUsername.setText("@" + username);
-                binding.editFirstNameText.setText(firstName);
-                binding.editLastNameText.setText(lastName);
-                binding.editUsernameText.setText(username);
-                binding.editSchoolText.setText(school);
-                binding.userEmailDisplay.setText("Email: " + email);
+                // Populate the read-only overview
+                String fullName = (firstName != null ? firstName : "") + " " + (lastName != null ? lastName : "");
+                binding.tvProfileName.setText(fullName.trim());
+                binding.tvProfileUsername.setText("@" + (username != null ? username : ""));
+                binding.userEmailDisplay.setText(email != null ? email : "");
 
                 Long dateJoined = (Long) data.get("dateJoined");
                 if (dateJoined != null) {
                     SimpleDateFormat sdf = new SimpleDateFormat("MMMM d, yyyy", Locale.getDefault());
-                    binding.dateJoinedDisplay.setText("Member since: " + sdf.format(new Date(dateJoined)));
+                    binding.dateJoinedDisplay.setText("Member since " + sdf.format(new Date(dateJoined)));
                 }
+
+                // Pre-fill edit fields (so they're ready when the user opens the edit panel)
+                binding.editFirstNameText.setText(firstName);
+                binding.editLastNameText.setText(lastName);
+                binding.editUsernameText.setText(username);
+                binding.editSchoolText.setText(school);
             }
         });
     }
@@ -141,8 +153,11 @@ public class SettingsFragment extends Fragment {
                     binding.saveProfileButton.setEnabled(true);
                     if (success != null && success) {
                         Toast.makeText(getContext(), "Profile updated!", Toast.LENGTH_SHORT).show();
+                        // Update overview text and collapse edit panel
                         binding.tvProfileName.setText(firstName + " " + lastName);
                         binding.tvProfileUsername.setText("@" + username);
+                        binding.llEditFields.setVisibility(View.GONE);
+                        binding.btnEditProfile.setText("Edit Profile");
                     }
                 });
     }

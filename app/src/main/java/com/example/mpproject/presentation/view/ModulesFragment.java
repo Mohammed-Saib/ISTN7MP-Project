@@ -38,7 +38,8 @@ public class ModulesFragment extends Fragment {
 
     private final List<Module> fullActive   = new ArrayList<>();
     private final List<Module> fullArchived = new ArrayList<>();
-    private String searchQuery = "";
+    private String searchQuery  = "";
+    private boolean showArchived = false;
 
     @Nullable
     @Override
@@ -61,12 +62,22 @@ public class ModulesFragment extends Fragment {
         viewModel = new ViewModelProvider(this, factory).get(ModuleViewModel.class);
 
         adapter = new ModuleAdapter(module -> {
-            viewModel.setEditingModule(module);
-            new ModuleBottomSheetFragment().show(getChildFragmentManager(), "edit_module");
+            Bundle args = new Bundle();
+            args.putString("moduleId", module.getModuleId());
+            Navigation.findNavController(requireView())
+                    .navigate(R.id.action_modulesFragment_to_moduleDetailFragment, args);
         });
 
         binding.rvModules.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.rvModules.setAdapter(adapter);
+
+        // Archive filter chips
+        binding.chipActive.setOnCheckedChangeListener((chip, checked) -> {
+            if (checked) { showArchived = false; updateList(); }
+        });
+        binding.chipArchived.setOnCheckedChangeListener((chip, checked) -> {
+            if (checked) { showArchived = true; updateList(); }
+        });
 
         viewModel.activeModules.observe(getViewLifecycleOwner(), active -> {
             fullActive.clear();
@@ -112,16 +123,15 @@ public class ModulesFragment extends Fragment {
     }
 
     private void updateList() {
-        List<Module> combined = new ArrayList<>(fullActive);
-        combined.addAll(fullArchived);
+        List<Module> source = showArchived ? new ArrayList<>(fullArchived) : new ArrayList<>(fullActive);
 
         if (searchQuery.isEmpty()) {
-            adapter.submitList(combined);
+            adapter.submitList(source);
             return;
         }
 
         List<Module> filtered = new ArrayList<>();
-        for (Module m : combined) {
+        for (Module m : source) {
             boolean nameMatch = m.getName().toLowerCase().contains(searchQuery);
             boolean codeMatch = m.getModuleCode() != null
                     && m.getModuleCode().toLowerCase().contains(searchQuery);

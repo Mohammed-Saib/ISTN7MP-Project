@@ -78,6 +78,50 @@ public class ModuleNoteRepositoryImpl implements ModuleNoteRepository {
         return Transformations.map(moduleNoteDao.getAllByModule(moduleId), this::toDomainList);
     }
 
+    // Unconditional merge-sync from Firestore.
+    // Module notes are nested under modules, so this first fetches all module IDs for the user
+    // then fetches each module's notes subcollection and upserts them into Room.
+    public void syncFromFirestore(String userId) {
+        firestore.collection("users").document(userId)
+                .collection("modules")
+                .get()
+                .addOnSuccessListener(modulesSnap -> {
+                    for (com.google.firebase.firestore.DocumentSnapshot moduleDoc : modulesSnap.getDocuments()) {
+                        String moduleId = moduleDoc.getId();
+                        firestore.collection("users").document(userId)
+                                .collection("modules").document(moduleId)
+                                .collection("module_notes")
+                                .get()
+                                .addOnSuccessListener(notesSnap ->
+                                        AppDatabase.databaseWriteExecutor.execute(() -> {
+                                            for (com.google.firebase.firestore.DocumentSnapshot doc : notesSnap.getDocuments()) {
+                                                try {
+                                                    ModuleNoteEntity e = new ModuleNoteEntity();
+                                                    e.setNoteId(doc.getId());
+                                                    e.setModuleId(moduleId);
+                                                    e.setUserId(doc.getString("userId") != null
+                                                            ? doc.getString("userId") : userId);
+                                                    e.setTitle(doc.getString("title"));
+                                                    e.setFileName(doc.getString("fileName"));
+                                                    e.setFileType(doc.getString("fileType"));
+                                                    Long size = doc.getLong("fileSizeBytes");
+                                                    e.setFileSizeBytes(size != null ? size : 0L);
+                                                    e.setStorageUri(doc.getString("storageUri"));
+                                                    e.setUploadStatus(doc.getString("uploadStatus"));
+                                                    Long createdAt = doc.getLong("createdAt");
+                                                    e.setCreatedAt(createdAt != null ? createdAt : 0L);
+                                                    moduleNoteDao.insert(e);
+                                                } catch (Exception ex) {
+                                                    Log.e(TAG, "Error syncing module note from Firestore", ex);
+                                                }
+                                            }
+                                        }))
+                                .addOnFailureListener(e -> Log.e(TAG, "Firestore module_notes sync failed for module " + moduleId, e));
+                    }
+                })
+                .addOnFailureListener(e -> Log.e(TAG, "Firestore modules fetch failed during module note sync", e));
+    }
+
     // Sync metadata to users/{userId}/modules/{moduleId}/module_notes/{noteId}
     private void syncToFirestore(ModuleNote note) {
         try {

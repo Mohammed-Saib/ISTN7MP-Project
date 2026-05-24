@@ -32,7 +32,4 @@ public interface UserDao {
     @Query("SELECT * FROM users LIMIT 1")
     LiveData<UserEntity> getCurrentUser();
 
-    // Update only the sync timestamp so we know when we last pulled from Firestore
-    @Query("UPDATE users SET lastSyncedAt = :timestamp WHERE userId = :userId")
-    void updateLastSyncedAt(String userId, long timestamp);
 }

@@ -16,7 +16,8 @@ import androidx.room.PrimaryKey;
         indices = {
                 @Index({"userId", "isCompleted"}), // separate active vs. completed todos efficiently
                 @Index("dueDate"),                  // sort by due date; used by calendar range queries
-                @Index("moduleId")                  // all todos for a specific module
+                @Index("moduleId"),                 // all todos for a specific module
+                @Index("recurrenceGroupId")         // group deletes and updates by series
         })
 public class TodoEntity {
 

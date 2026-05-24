@@ -19,6 +19,9 @@ public interface CalendarEventDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insert(CalendarEventEntity event);
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    void insertAll(List<CalendarEventEntity> events);
+
     @Update
     void update(CalendarEventEntity event);
 

@@ -41,8 +41,6 @@ public class AuthRepositoryImpl implements AuthRepository {
         userLiveData.setValue(null);
         errorLiveData.setValue(null);
 
-        Log.d(TAG, "Starting registration for: " + email);
-
         firebaseAuth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
@@ -78,16 +76,14 @@ public class AuthRepositoryImpl implements AuthRepository {
                                                 userLiveData.setValue(user);
                                             } else {
                                                 Log.e(TAG, "Firestore write failed", firestoreTask.getException());
-                                                String errorMsg = firestoreTask.getException() != null ? 
-                                                        firestoreTask.getException().getMessage() : "Firestore write failed";
-                                                errorLiveData.setValue("Database Error: " + errorMsg);
+                                                errorLiveData.setValue("Registration failed. Please try again.");
                                             }
                                         });
                             });
                         }
                     } else {
                         Log.e(TAG, "Auth creation failed", task.getException());
-                        errorLiveData.setValue(task.getException() != null ? task.getException().getMessage() : "Registration failed");
+                        errorLiveData.setValue("Registration failed. Please check your details.");
                     }
                 });
         return userLiveData;
@@ -108,7 +104,8 @@ public class AuthRepositoryImpl implements AuthRepository {
                         } else if (e instanceof FirebaseAuthInvalidCredentialsException) {
                             errorLiveData.setValue("Incorrect email or password.");
                         } else {
-                            errorLiveData.setValue(e != null ? e.getMessage() : "Login failed");
+                            Log.e(TAG, "Login failed", e);
+                            errorLiveData.setValue("Login failed. Please try again.");
                         }
                     }
                 });
@@ -139,7 +136,8 @@ public class AuthRepositoryImpl implements AuthRepository {
                     if (task.isSuccessful()) {
                         success.setValue(true);
                     } else {
-                        errorLiveData.setValue(task.getException() != null ? task.getException().getMessage() : "Failed to send reset email");
+                        Log.e(TAG, "Password reset failed", task.getException());
+                        errorLiveData.setValue("Failed to send reset email. Please try again.");
                         success.setValue(false);
                     }
                 });
@@ -189,7 +187,10 @@ public class AuthRepositoryImpl implements AuthRepository {
                         userData.setValue(documentSnapshot.getData());
                     }
                 })
-                .addOnFailureListener(e -> errorLiveData.setValue(e.getMessage()));
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "getUserData failed", e);
+                    errorLiveData.setValue("Failed to load profile data.");
+                });
         return userData;
     }
 }

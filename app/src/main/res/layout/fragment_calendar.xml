@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:background="?android:colorBackground">
 
-    <!-- ── Scrollable body (top bar + grid + agenda) ── -->
+    <!-- ── Scrollable body (top bars + grid + agenda) ── -->
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -18,7 +18,7 @@
             android:orientation="vertical"
             android:paddingBottom="80dp">
 
-            <!-- Top bar -->
+            <!-- ── Row 1: App title + view controls (always visible) ── -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -27,7 +27,7 @@
                 android:orientation="horizontal"
                 android:paddingHorizontal="20dp"
                 android:paddingTop="52dp"
-                android:paddingBottom="12dp">
+                android:paddingBottom="8dp">
 
                 <TextView
                     android:layout_width="0dp"
@@ -35,84 +35,113 @@
                     android:layout_weight="1"
                     android:text="@string/title_calendar"
                     android:textColor="?attr/colorOnBackground"
-                    android:textSize="20sp"
+                    android:textSize="22sp"
                     android:textStyle="bold" />
+
+                <!-- Toggle between calendar grid and upcoming list -->
+                <ImageButton
+                    android:id="@+id/btn_toggle_view"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:background="@drawable/bg_circle_surface"
+                    android:contentDescription="Toggle list view"
+                    android:src="@drawable/ic_view_list"
+                    app:tint="?attr/colorOnSurface" />
 
                 <ImageButton
                     android:id="@+id/btn_settings"
                     android:layout_width="36dp"
                     android:layout_height="36dp"
+                    android:layout_marginStart="8dp"
                     android:background="@drawable/bg_circle_surface"
                     android:contentDescription="Settings"
                     android:src="@drawable/ic_settings"
                     app:tint="?attr/colorOnSurface" />
+            </LinearLayout>
+
+            <!-- ── Row 2: Month navigation (hidden in list mode) ── -->
+            <LinearLayout
+                android:id="@+id/ll_month_nav"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="12dp"
+                android:paddingBottom="10dp">
 
                 <ImageButton
                     android:id="@+id/btn_prev_month"
                     android:layout_width="36dp"
                     android:layout_height="36dp"
-                    android:layout_marginStart="8dp"
                     android:background="@drawable/bg_circle_surface"
                     android:contentDescription="Previous month"
                     android:src="@drawable/ic_chevron_left"
                     app:tint="?attr/colorOnSurface" />
 
+                <!-- Month + year label — centred between the chevrons -->
+                <TextView
+                    android:id="@+id/tv_month_year"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:textColor="?attr/colorOnBackground"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    tools:text="May 2026" />
+
                 <ImageButton
                     android:id="@+id/btn_next_month"
                     android:layout_width="36dp"
                     android:layout_height="36dp"
-                    android:layout_marginStart="8dp"
                     android:background="@drawable/bg_circle_surface"
                     android:contentDescription="Next month"
                     android:src="@drawable/ic_chevron_right"
                     app:tint="?attr/colorOnSurface" />
             </LinearLayout>
 
-            <!-- Month + year label updated by CalendarFragment -->
-            <TextView
-                android:id="@+id/tv_month_year"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:paddingHorizontal="20dp"
-                android:paddingBottom="6dp"
-                android:textColor="?attr/colorOnBackground"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                tools:text="May 2026" />
-
-            <!-- Day-of-week header row (Sun–Sat) -->
+            <!-- ── Calendar section: grid + day headers (hidden in list mode) ── -->
             <LinearLayout
+                android:id="@+id/ll_calendar_section"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:paddingHorizontal="12dp">
+                android:orientation="vertical">
 
-                <TextView style="@style/CalDayHeader" android:text="S" />
-                <TextView style="@style/CalDayHeader" android:text="M" />
-                <TextView style="@style/CalDayHeader" android:text="T" />
-                <TextView style="@style/CalDayHeader" android:text="W" />
-                <TextView style="@style/CalDayHeader" android:text="T" />
-                <TextView style="@style/CalDayHeader" android:text="F" />
-                <TextView style="@style/CalDayHeader" android:text="S" />
+                <!-- Day-of-week header row (Sun–Sat) -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="12dp">
+
+                    <TextView style="@style/CalDayHeader" android:text="S" />
+                    <TextView style="@style/CalDayHeader" android:text="M" />
+                    <TextView style="@style/CalDayHeader" android:text="T" />
+                    <TextView style="@style/CalDayHeader" android:text="W" />
+                    <TextView style="@style/CalDayHeader" android:text="T" />
+                    <TextView style="@style/CalDayHeader" android:text="F" />
+                    <TextView style="@style/CalDayHeader" android:text="S" />
+                </LinearLayout>
+
+                <!-- Month grid — GridLayoutManager(7) set in CalendarFragment -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rv_calendar_grid"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="4dp"
+                    android:nestedScrollingEnabled="false"
+                    android:overScrollMode="never" />
+
+                <!-- Divider between grid and agenda -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginHorizontal="20dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="4dp"
+                    android:background="?attr/colorOutline" />
+
             </LinearLayout>
-
-            <!-- Month grid — GridLayoutManager(7) set in CalendarFragment -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rv_calendar_grid"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="4dp"
-                android:nestedScrollingEnabled="false"
-                android:overScrollMode="never" />
-
-            <!-- Divider between grid and agenda -->
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginHorizontal="20dp"
-                android:layout_marginTop="8dp"
-                android:layout_marginBottom="4dp"
-                android:background="?attr/colorOutline" />
 
             <!-- Agenda section header — updated to selected day label -->
             <TextView
@@ -126,6 +155,29 @@
                 android:textSize="15sp"
                 android:textStyle="bold"
                 tools:text="Today, 17 May" />
+
+            <!-- Search field — visible only in list/upcoming mode -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/til_search_list"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginBottom="8dp"
+                android:hint="Search events…"
+                android:visibility="gone"
+                app:endIconMode="clear_text"
+                app:startIconDrawable="@drawable/ic_search">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_search_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text"
+                    android:imeOptions="actionSearch"
+                    android:maxLines="1" />
+
+            </com.google.android.material.textfield.TextInputLayout>
 
             <!-- Empty state for agenda -->
             <TextView

@@ -17,6 +17,7 @@ public class CalendarEvent {
     private String recurrencePattern;     // DAILY | WEEKLY | MONTHLY | YEARLY; null = non-recurring
     private String recurrenceGroupId;     // shared UUID linking all occurrences in a series
     private Long recurrenceEndDate;       // nullable epoch millis — end of recurrence window
+    private String linkedAssessmentId;  // UUID of the Assessment that created this event; null otherwise
     private long createdAt;
     private long updatedAt;
 
@@ -55,6 +56,7 @@ public class CalendarEvent {
     public void setAllDay(boolean allDay) { isAllDay = allDay; }
     public void setPushedToDeviceCalendar(boolean pushed) { isPushedToDeviceCalendar = pushed; }
     public void setDeviceCalendarEventId(Long deviceCalendarEventId) { this.deviceCalendarEventId = deviceCalendarEventId; }
+    public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }
     public void setUpdatedAt(long updatedAt) { this.updatedAt = updatedAt; }
 
     public String getRecurrencePattern() { return recurrencePattern; }
@@ -65,4 +67,7 @@ public class CalendarEvent {
 
     public Long getRecurrenceEndDate() { return recurrenceEndDate; }
     public void setRecurrenceEndDate(Long recurrenceEndDate) { this.recurrenceEndDate = recurrenceEndDate; }
+
+    public String getLinkedAssessmentId() { return linkedAssessmentId; }
+    public void setLinkedAssessmentId(String linkedAssessmentId) { this.linkedAssessmentId = linkedAssessmentId; }
 }

@@ -7,58 +7,88 @@
     android:layout_marginBottom="8dp"
     app:cardBackgroundColor="?attr/colorSurface"
     app:cardCornerRadius="14dp"
-    app:cardElevation="0dp"
-    app:strokeColor="?attr/colorOutline"
-    app:strokeWidth="1dp">
+    app:cardElevation="2dp">
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:minHeight="56dp"
-        android:orientation="horizontal"
-        android:paddingHorizontal="12dp"
-        android:paddingVertical="12dp">
+        android:minHeight="56dp">
 
-        <!-- Checkbox bound to todo.isCompleted() -->
+        <!-- Priority strip (full height) — color set to HIGH/MEDIUM/LOW in AgendaAdapter -->
+        <View
+            android:id="@+id/view_priority_strip"
+            android:layout_width="4dp"
+            android:layout_height="0dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <!-- Completion checkbox — vertically centered in the card -->
         <com.google.android.material.checkbox.MaterialCheckBox
             android:id="@+id/cb_todo"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp" />
+            android:layout_marginStart="12dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toEndOf="@id/view_priority_strip"
+            app:layout_constraintTop_toTopOf="parent" />
 
-        <LinearLayout
+        <!-- Title -->
+        <TextView
+            android:id="@+id/tv_todo_title"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/tv_todo_title"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="?attr/colorOnSurface"
-                android:textSize="14sp" />
-
-            <!-- Due time shown if the todo has a specific time component -->
-            <TextView
-                android:id="@+id/tv_todo_time"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:textColor="?attr/colorOnSurface"
-                android:textSize="12sp"
-                android:alpha="0.7"
-                android:visibility="gone" />
-        </LinearLayout>
-
-        <!-- Priority dot: HIGH=red, MEDIUM=amber, LOW=green — color set in adapter -->
-        <View
-            android:id="@+id/view_priority_dot"
-            android:layout_width="8dp"
-            android:layout_height="8dp"
             android:layout_marginStart="8dp"
-            android:background="@drawable/bg_circle_surface" />
+            android:layout_marginTop="12dp"
+            android:layout_marginEnd="16dp"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/cb_todo"
+            app:layout_constraintTop_toTopOf="parent" />
 
-    </LinearLayout>
+        <!-- Due time — shown only if a specific time was set (not midnight) -->
+        <TextView
+            android:id="@+id/tv_todo_time"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:alpha="0.7"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="12sp"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="@id/tv_todo_title"
+            app:layout_constraintStart_toStartOf="@id/tv_todo_title"
+            app:layout_constraintTop_toBottomOf="@id/tv_todo_title" />
+
+        <!-- Module name chip — GONE if no module linked; text set by AgendaAdapter from module map -->
+        <TextView
+            android:id="@+id/tv_todo_module"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:background="@drawable/bg_rounded_surface"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="2dp"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="11sp"
+            android:visibility="gone"
+            app:layout_constraintStart_toStartOf="@id/tv_todo_title"
+            app:layout_constraintTop_toBottomOf="@id/tv_todo_time" />
+
+        <!-- Barrier at the bottom of the lowest content view -->
+        <androidx.constraintlayout.widget.Barrier
+            android:id="@+id/barrier_content_bottom"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:barrierDirection="bottom"
+            app:constraint_referenced_ids="tv_todo_title,tv_todo_time,tv_todo_module" />
+
+        <!-- Space provides the 12dp bottom padding -->
+        <Space
+            android:layout_width="match_parent"
+            android:layout_height="12dp"
+            app:layout_constraintTop_toBottomOf="@id/barrier_content_bottom" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

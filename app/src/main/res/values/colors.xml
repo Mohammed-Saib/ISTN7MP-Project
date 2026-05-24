@@ -50,6 +50,9 @@
     <color name="event_assignment">#D97706</color>
     <color name="event_personal">#0D9488</color>
     <color name="event_todo">#6B6760</color>
+    <color name="event_quiz">#EA580C</color>
+    <color name="event_test">#C2410C</color>
+    <color name="event_lab">#7C3AED</color>
 
     <!-- ── Semantic ── -->
     <color name="error">#DC2626</color>

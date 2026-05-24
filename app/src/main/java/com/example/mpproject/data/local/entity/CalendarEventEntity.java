@@ -16,7 +16,8 @@ import androidx.room.PrimaryKey;
                 onDelete = ForeignKey.SET_NULL), // deleting a module sets moduleId null (no cascade)
         indices = {
                 @Index({"userId", "startTime"}), // calendar range queries — most common read
-                @Index("moduleId")               // all events for a specific module
+                @Index("moduleId"),              // all events for a specific module
+                @Index("recurrenceGroupId")      // group deletes and updates by series
         })
 public class CalendarEventEntity {
 
@@ -37,6 +38,7 @@ public class CalendarEventEntity {
     private String recurrencePattern;          // DAILY | WEEKLY | MONTHLY | YEARLY; null = non-recurring
     private String recurrenceGroupId;          // shared UUID across all occurrences of a series
     private Long recurrenceEndDate;            // unix ms; null if no end cap
+    private String linkedAssessmentId;          // UUID of the Assessment that auto-created this event; null otherwise
     private long createdAt;                    // unix ms
     private long updatedAt;                    // unix ms
 
@@ -72,6 +74,8 @@ public class CalendarEventEntity {
     public void setRecurrenceGroupId(String recurrenceGroupId) { this.recurrenceGroupId = recurrenceGroupId; }
     public Long getRecurrenceEndDate() { return recurrenceEndDate; }
     public void setRecurrenceEndDate(Long recurrenceEndDate) { this.recurrenceEndDate = recurrenceEndDate; }
+    public String getLinkedAssessmentId() { return linkedAssessmentId; }
+    public void setLinkedAssessmentId(String id) { this.linkedAssessmentId = id; }
     public long getCreatedAt() { return createdAt; }
     public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }
     public long getUpdatedAt() { return updatedAt; }

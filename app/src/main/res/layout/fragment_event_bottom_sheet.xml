@@ -60,11 +60,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="textCapSentences"
+                    android:maxLength="200"
                     android:maxLines="1" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <!-- Event type chip group -->
             <TextView
+                android:id="@+id/tv_type_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
@@ -110,6 +112,17 @@
                     android:layout_height="wrap_content"
                     android:text="Personal" />
             </com.google.android.material.chip.ChipGroup>
+
+            <!-- Shown instead of chip group for assessment-linked events -->
+            <TextView
+                android:id="@+id/tv_type_assessment"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="Module Assessment"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="14sp"
+                android:visibility="gone" />
 
             <!-- Date picker row -->
             <LinearLayout
@@ -186,9 +199,20 @@
                     android:layout_width="0dp"
                     android:layout_height="36dp"
                     android:layout_weight="1"
-                    android:text="End time"
+                    android:text="No end"
                     android:textSize="12sp"
                     app:cornerRadius="10dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_clear_end_time"
+                    style="@style/Widget.Material3.Button.IconButton"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_marginStart="4dp"
+                    android:visibility="gone"
+                    app:icon="@drawable/ic_close"
+                    android:contentDescription="Clear end time" />
+
             </LinearLayout>
 
             <!-- Module dropdown -->
@@ -228,6 +252,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="textMultiLine|textCapSentences"
+                    android:maxLength="2000"
                     android:maxLines="3"
                     android:minLines="2" />
             </com.google.android.material.textfield.TextInputLayout>

@@ -1,6 +1,8 @@
 package com.example.mpproject.presentation.view.modules;
 
 import android.os.Bundle;
+import android.text.TextUtils;
+import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -174,6 +176,12 @@ public class ModuleBottomSheetFragment extends BottomSheetDialogFragment {
         String lecEmail    = trimOrNull(binding.etLecturerEmail.getText());
         String officeHours = trimOrNull(binding.etOfficeHours.getText());
         String color       = resolveSelectedColor();
+
+        if (!TextUtils.isEmpty(lecEmail) && !Patterns.EMAIL_ADDRESS.matcher(lecEmail).matches()) {
+            binding.layoutLecturerEmail.setError("Invalid email address");
+            return;
+        }
+        binding.layoutLecturerEmail.setError(null);
 
         Module editing = viewModel.getEditingModule().getValue();
         if (editing != null) {

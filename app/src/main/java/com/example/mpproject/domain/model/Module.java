@@ -44,5 +44,6 @@ public class Module {
     public void setColor(String color) { this.color = color; }
     public void setSemester(String semester) { this.semester = semester; }
     public void setArchived(boolean archived) { isArchived = archived; }
+    public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }
     public void setUpdatedAt(long updatedAt) { this.updatedAt = updatedAt; }
 }

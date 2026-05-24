@@ -4,7 +4,7 @@
      Background is set in code: circle for today/selected, transparent otherwise. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="52dp"
+    android:layout_height="56dp"
     android:gravity="center"
     android:orientation="vertical"
     android:paddingBottom="4dp">

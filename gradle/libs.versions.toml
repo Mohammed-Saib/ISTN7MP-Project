@@ -11,9 +11,6 @@ room = "2.6.1"
 lifecycle = "2.8.7"
 navigation = "2.8.5"
 firebaseBom = "34.12.0"
-okhttp = "4.12.0"
-gson = "2.11.0"
-lottie = "6.6.0"
 googleServices = "4.4.4"
 
 [libraries]
@@ -43,13 +40,6 @@ firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.r
 firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
 firebase-auth = { group = "com.google.firebase", name = "firebase-auth" }
 firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore" }
-
-# Networking & JSON
-okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
-gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
-
-# Animations
-lottie = { group = "com.airbnb.android", name = "lottie", version.ref = "lottie" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

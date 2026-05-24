@@ -11,6 +11,8 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.mpproject.R;
@@ -21,38 +23,91 @@ import com.example.mpproject.presentation.viewmodel.CalendarViewModel;
 import com.google.android.material.checkbox.MaterialCheckBox;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 
-// [Adapter] Multi-type RecyclerView for the day's agenda.
+// [Adapter] Multi-type RecyclerView for the day agenda and upcoming list.
 // Two view types: CalendarEvent (TYPE_EVENT) and Todo (TYPE_TODO).
-public class AgendaAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+public class AgendaAdapter extends ListAdapter<AgendaItem, RecyclerView.ViewHolder> {
 
     public interface OnEventClickListener  { void onEventClick(CalendarEvent event); }
     public interface OnTodoCheckedListener { void onTodoChecked(Todo todo, boolean checked); }
 
-    private List<AgendaItem> items = new ArrayList<>();
+    // Resolved at bind time so module chips populate correctly for off-screen items too
+    private Map<String, String> moduleNameMap = new HashMap<>();
+    // Show event date in list/upcoming mode; hidden in day-agenda mode (date already in header)
+    private boolean showDate = false;
+
     private final OnEventClickListener  eventClickListener;
     private final OnTodoCheckedListener todoCheckedListener;
 
+    // Static formatters — created once, reused across all bind calls
     private static final SimpleDateFormat TIME_FMT =
             new SimpleDateFormat("HH:mm", Locale.getDefault());
+    private static final SimpleDateFormat DATE_FMT =
+            new SimpleDateFormat("EEE, d MMM", Locale.getDefault());
+
+    private static final DiffUtil.ItemCallback<AgendaItem> DIFF =
+            new DiffUtil.ItemCallback<AgendaItem>() {
+                @Override
+                public boolean areItemsTheSame(@NonNull AgendaItem oldItem, @NonNull AgendaItem newItem) {
+                    if (oldItem.getType() != newItem.getType()) return false;
+                    if (oldItem.getType() == AgendaItem.TYPE_EVENT) {
+                        return oldItem.getEvent().getEventId().equals(newItem.getEvent().getEventId());
+                    }
+                    return oldItem.getTodo().getTodoId().equals(newItem.getTodo().getTodoId());
+                }
+
+                @Override
+                public boolean areContentsTheSame(@NonNull AgendaItem oldItem, @NonNull AgendaItem newItem) {
+                    if (oldItem.getType() != newItem.getType()) return false;
+                    if (oldItem.getType() == AgendaItem.TYPE_EVENT) {
+                        CalendarEvent o = oldItem.getEvent();
+                        CalendarEvent n = newItem.getEvent();
+                        return o.getEventId().equals(n.getEventId())
+                                && Objects.equals(o.getTitle(), n.getTitle())
+                                && Objects.equals(o.getType(), n.getType())
+                                && o.getStartTime() == n.getStartTime()
+                                && Objects.equals(o.getEndTime(), n.getEndTime())
+                                && o.isAllDay() == n.isAllDay()
+                                && Objects.equals(o.getModuleId(), n.getModuleId())
+                                && Objects.equals(o.getRecurrenceGroupId(), n.getRecurrenceGroupId());
+                    }
+                    Todo o = oldItem.getTodo();
+                    Todo n = newItem.getTodo();
+                    return o.getTodoId().equals(n.getTodoId())
+                            && Objects.equals(o.getTitle(), n.getTitle())
+                            && o.isCompleted() == n.isCompleted()
+                            && Objects.equals(o.getPriority(), n.getPriority())
+                            && Objects.equals(o.getDueDate(), n.getDueDate())
+                            && Objects.equals(o.getModuleId(), n.getModuleId());
+                }
+            };
 
     public AgendaAdapter(OnEventClickListener eventClick, OnTodoCheckedListener todoChecked) {
+        super(DIFF);
         this.eventClickListener  = eventClick;
         this.todoCheckedListener = todoChecked;
     }
 
-    public void submitList(List<AgendaItem> newItems) {
-        items = newItems != null ? newItems : new ArrayList<>();
+    public void setModuleNameMap(Map<String, String> map) {
+        moduleNameMap = map != null ? map : new HashMap<>();
         notifyDataSetChanged();
+    }
+
+    public void setShowDate(boolean show) {
+        if (showDate != show) {
+            showDate = show;
+            notifyDataSetChanged();
+        }
     }
 
     @Override
     public int getItemViewType(int position) {
-        return items.get(position).getType();
+        return getItem(position).getType();
     }
 
     @NonNull
@@ -67,7 +122,7 @@ public class AgendaAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        AgendaItem item = items.get(position);
+        AgendaItem item = getItem(position);
         if (item.getType() == AgendaItem.TYPE_EVENT) {
             ((EventViewHolder) holder).bind(item.getEvent());
         } else {
@@ -75,40 +130,46 @@ public class AgendaAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         }
     }
 
-    @Override
-    public int getItemCount() { return items.size(); }
-
     // ── Event view holder ──────────────────────────────────────────────────
 
     class EventViewHolder extends RecyclerView.ViewHolder {
 
         private final View      typeStrip;
         private final TextView  tvTitle;
+        private final TextView  tvDate;
         private final TextView  tvTime;
         private final TextView  tvModule;
-        private final TextView  tvType;
         private final ImageView ivRecurring;
+        // Reused across bind calls — avoids allocation per scroll frame
+        private final GradientDrawable stripDrawable = new GradientDrawable();
 
         EventViewHolder(@NonNull View v) {
             super(v);
             typeStrip   = v.findViewById(R.id.view_type_strip);
             tvTitle     = v.findViewById(R.id.tv_event_title);
+            tvDate      = v.findViewById(R.id.tv_event_date);
             tvTime      = v.findViewById(R.id.tv_event_time);
             tvModule    = v.findViewById(R.id.tv_event_module);
-            tvType      = v.findViewById(R.id.tv_event_type);
             ivRecurring = v.findViewById(R.id.iv_recurring);
+            typeStrip.setBackground(stripDrawable);
         }
 
         void bind(CalendarEvent e) {
             Context ctx = itemView.getContext();
 
-            // Left strip colour by type
+            // Left strip colour by event type — mutate existing drawable instead of creating new
             int colorInt = ContextCompat.getColor(ctx, CalendarViewModel.colorResForType(e.getType()));
-            GradientDrawable strip = new GradientDrawable();
-            strip.setColor(colorInt);
-            typeStrip.setBackground(strip);
+            stripDrawable.setColor(colorInt);
 
             tvTitle.setText(e.getTitle());
+
+            // Date shown only in list/upcoming mode
+            if (showDate) {
+                tvDate.setVisibility(View.VISIBLE);
+                tvDate.setText(DATE_FMT.format(new Date(e.getStartTime())));
+            } else {
+                tvDate.setVisibility(View.GONE);
+            }
 
             // Time: "All day" or "HH:mm – HH:mm"
             if (e.isAllDay()) {
@@ -120,33 +181,23 @@ public class AgendaAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
                         : start);
             }
 
-            // Module chip
-            if (e.getModuleId() != null && !e.getModuleId().isEmpty()) {
-                tvModule.setVisibility(View.VISIBLE);
-                // Module name resolved by CalendarFragment via the modules LiveData
-                tvModule.setTag(e.getModuleId());
+            // Module chip resolved from map at bind time (handles off-screen items correctly)
+            String moduleId = e.getModuleId();
+            if (moduleId != null && !moduleId.isEmpty()) {
+                String name = moduleNameMap.get(moduleId);
+                if (name != null) {
+                    tvModule.setText(name);
+                    tvModule.setVisibility(View.VISIBLE);
+                } else {
+                    tvModule.setVisibility(View.GONE);
+                }
             } else {
                 tvModule.setVisibility(View.GONE);
             }
 
-            // Type badge label
-            tvType.setText(labelForType(e.getType()));
-            tvType.setTextColor(colorInt);
-
-            // Recurring indicator
             ivRecurring.setVisibility(e.getRecurrenceGroupId() != null ? View.VISIBLE : View.GONE);
 
             itemView.setOnClickListener(v -> eventClickListener.onEventClick(e));
-        }
-
-        private String labelForType(String type) {
-            if (type == null) return "";
-            switch (type) {
-                case "EXAM":           return "EXAM";
-                case "ASSIGNMENT_DUE": return "DUE";
-                case "PERSONAL":       return "PERSONAL";
-                default:               return "LECTURE";
-            }
         }
     }
 
@@ -154,21 +205,35 @@ public class AgendaAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
 
     class TodoViewHolder extends RecyclerView.ViewHolder {
 
+        private final View     priorityStrip;
         private final MaterialCheckBox cbTodo;
         private final TextView tvTitle;
         private final TextView tvTime;
-        private final View priorityDot;
+        private final TextView tvModule;
+        // Reused across bind calls — avoids allocation per scroll frame
+        private final GradientDrawable stripDrawable = new GradientDrawable();
 
         TodoViewHolder(@NonNull View v) {
             super(v);
-            cbTodo      = v.findViewById(R.id.cb_todo);
-            tvTitle     = v.findViewById(R.id.tv_todo_title);
-            tvTime      = v.findViewById(R.id.tv_todo_time);
-            priorityDot = v.findViewById(R.id.view_priority_dot);
+            priorityStrip = v.findViewById(R.id.view_priority_strip);
+            cbTodo        = v.findViewById(R.id.cb_todo);
+            tvTitle       = v.findViewById(R.id.tv_todo_title);
+            tvTime        = v.findViewById(R.id.tv_todo_time);
+            tvModule      = v.findViewById(R.id.tv_todo_module);
+            priorityStrip.setBackground(stripDrawable);
         }
 
         void bind(Todo todo) {
             Context ctx = itemView.getContext();
+
+            // Priority strip — mutate existing drawable instead of creating new
+            int priorityColor;
+            switch (todo.getPriority() != null ? todo.getPriority() : "MEDIUM") {
+                case "HIGH":  priorityColor = R.color.priority_high;   break;
+                case "LOW":   priorityColor = R.color.priority_low;    break;
+                default:      priorityColor = R.color.priority_medium; break;
+            }
+            stripDrawable.setColor(ContextCompat.getColor(ctx, priorityColor));
 
             // Suppress listener during bind to avoid spurious callbacks
             cbTodo.setOnCheckedChangeListener(null);
@@ -195,17 +260,19 @@ public class AgendaAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
                 tvTime.setVisibility(View.GONE);
             }
 
-            // Priority dot colour
-            int priorityColor;
-            switch (todo.getPriority() != null ? todo.getPriority() : "MEDIUM") {
-                case "HIGH":  priorityColor = R.color.priority_high;   break;
-                case "LOW":   priorityColor = R.color.priority_low;    break;
-                default:      priorityColor = R.color.priority_medium; break;
+            // Module chip resolved from map at bind time
+            String moduleId = todo.getModuleId();
+            if (moduleId != null && !moduleId.isEmpty()) {
+                String name = moduleNameMap.get(moduleId);
+                if (name != null) {
+                    tvModule.setText(name);
+                    tvModule.setVisibility(View.VISIBLE);
+                } else {
+                    tvModule.setVisibility(View.GONE);
+                }
+            } else {
+                tvModule.setVisibility(View.GONE);
             }
-            GradientDrawable dot = new GradientDrawable();
-            dot.setShape(GradientDrawable.OVAL);
-            dot.setColor(ContextCompat.getColor(ctx, priorityColor));
-            priorityDot.setBackground(dot);
         }
     }
 }

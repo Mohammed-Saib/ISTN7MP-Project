@@ -15,6 +15,8 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.mpproject.R;
+import com.example.mpproject.data.local.AppDatabase;
+import com.example.mpproject.data.repository.AssessmentRepositoryImpl;
 import com.example.mpproject.databinding.FragmentEventBottomSheetBinding;
 import com.example.mpproject.domain.model.CalendarEvent;
 import com.example.mpproject.domain.model.Module;
@@ -38,6 +40,7 @@ public class EventBottomSheetFragment extends BottomSheetDialogFragment {
     private Calendar pickedDate;
     private int startHour   = 9,  startMinute = 0;
     private int endHour     = 10, endMinute   = 0;
+    private boolean hasEndTime = false;
     private Calendar recurrenceEndDate = null;
 
     private final List<String> moduleNames = new ArrayList<>();
@@ -95,12 +98,31 @@ public class EventBottomSheetFragment extends BottomSheetDialogFragment {
         binding.btnPickDate.setOnClickListener(v -> showDatePicker());
         binding.btnPickStartTime.setOnClickListener(v -> showTimePicker(true));
         binding.btnPickEndTime.setOnClickListener(v -> showTimePicker(false));
+        binding.btnClearEndTime.setOnClickListener(v -> {
+            hasEndTime = false;
+            updateTimeButtons();
+        });
         binding.btnSave.setOnClickListener(v -> saveEvent());
 
         binding.btnDelete.setOnClickListener(v -> {
             CalendarEvent ev = viewModel.getEditingEvent().getValue();
             if (ev == null) return;
-            if (ev.getRecurrenceGroupId() != null) {
+            if (ev.getLinkedAssessmentId() != null) {
+                // This event was auto-created by an assessment — warn before deleting
+                new AlertDialog.Builder(requireContext())
+                        .setTitle("Assessment Event")
+                        .setMessage("This event is linked to an assessment. Deleting it removes it from your calendar, but the assessment record remains.")
+                        .setPositiveButton("Delete from calendar", (d, w) -> {
+                            // Clear the calendarEventId on the assessment so it knows the event is gone
+                            AppDatabase db = AppDatabase.getDatabase(requireContext());
+                            new AssessmentRepositoryImpl(db.assessmentDao())
+                                    .clearCalendarEventId(ev.getLinkedAssessmentId());
+                            viewModel.deleteEvent(ev);
+                            dismiss();
+                        })
+                        .setNegativeButton("Cancel", null)
+                        .show();
+            } else if (ev.getRecurrenceGroupId() != null) {
                 new AlertDialog.Builder(requireContext())
                         .setTitle("Delete Event")
                         .setMessage("Delete just this occurrence, or all occurrences of this recurring event?")
@@ -133,6 +155,16 @@ public class EventBottomSheetFragment extends BottomSheetDialogFragment {
         binding.btnSave.setText("Update Event");
         binding.btnDelete.setVisibility(View.VISIBLE);
 
+        // Assessment-linked events: lock type to "Module Assessment" and module to read-only
+        if (e.getLinkedAssessmentId() != null) {
+            binding.tvTypeLabel.setVisibility(View.GONE);
+            binding.chipGroupType.setVisibility(View.GONE);
+            binding.tvTypeAssessment.setVisibility(View.VISIBLE);
+            binding.layoutModule.setEnabled(false);
+            binding.actvModule.setFocusable(false);
+            binding.actvModule.setClickable(false);
+        }
+
         binding.etTitle.setText(e.getTitle());
         binding.etDescription.setText(e.getDescription());
         binding.switchAllDay.setChecked(e.isAllDay());
@@ -150,8 +182,9 @@ public class EventBottomSheetFragment extends BottomSheetDialogFragment {
         if (e.getEndTime() != null) {
             Calendar end = Calendar.getInstance();
             end.setTimeInMillis(e.getEndTime());
-            endHour   = end.get(Calendar.HOUR_OF_DAY);
-            endMinute = end.get(Calendar.MINUTE);
+            endHour    = end.get(Calendar.HOUR_OF_DAY);
+            endMinute  = end.get(Calendar.MINUTE);
+            hasEndTime = true;
         }
         updateTimeButtons();
 
@@ -229,7 +262,7 @@ public class EventBottomSheetFragment extends BottomSheetDialogFragment {
         new TimePickerDialog(requireContext(),
                 (picker, hour, minute) -> {
                     if (isStart) { startHour = hour; startMinute = minute; }
-                    else         { endHour   = hour; endMinute   = minute; }
+                    else         { endHour = hour; endMinute = minute; hasEndTime = true; }
                     updateTimeButtons();
                 },
                 initHour, initMinute, true
@@ -257,7 +290,8 @@ public class EventBottomSheetFragment extends BottomSheetDialogFragment {
 
     private void updateTimeButtons() {
         binding.btnPickStartTime.setText(formatTime(startHour, startMinute));
-        binding.btnPickEndTime.setText(formatTime(endHour, endMinute));
+        binding.btnPickEndTime.setText(hasEndTime ? formatTime(endHour, endMinute) : "No end");
+        binding.btnClearEndTime.setVisibility(hasEndTime ? View.VISIBLE : View.GONE);
     }
 
     private String formatTime(int h, int m) {
@@ -273,7 +307,22 @@ public class EventBottomSheetFragment extends BottomSheetDialogFragment {
         }
         binding.layoutTitle.setError(null);
 
-        String type = resolveType();
+        CalendarEvent editing = viewModel.getEditingEvent().getValue();
+        boolean isAssessmentEvent = editing != null && editing.getLinkedAssessmentId() != null;
+
+        // For assessment events, preserve the original type and module — both are locked in UI
+        String type;
+        String moduleId;
+        if (isAssessmentEvent) {
+            type     = editing.getType();
+            moduleId = editing.getModuleId();
+        } else {
+            type = resolveType();
+            String selectedModuleName = binding.actvModule.getText() != null
+                    ? binding.actvModule.getText().toString() : "";
+            int moduleIdx = moduleNames.indexOf(selectedModuleName);
+            moduleId = (moduleIdx > 0 && moduleIdx < moduleIds.size()) ? moduleIds.get(moduleIdx) : null;
+        }
 
         Calendar startCal = (Calendar) pickedDate.clone();
         boolean allDay = binding.switchAllDay.isChecked();
@@ -289,7 +338,7 @@ public class EventBottomSheetFragment extends BottomSheetDialogFragment {
         long startMs = startCal.getTimeInMillis();
 
         Long endMs = null;
-        if (!allDay) {
+        if (!allDay && hasEndTime) {
             Calendar endCal = (Calendar) pickedDate.clone();
             endCal.set(Calendar.HOUR_OF_DAY, endHour);
             endCal.set(Calendar.MINUTE,      endMinute);
@@ -297,11 +346,6 @@ public class EventBottomSheetFragment extends BottomSheetDialogFragment {
             endMs = endCal.getTimeInMillis();
             if (endMs <= startMs) endMs = startMs + 3600000L;
         }
-
-        String selectedModuleName = binding.actvModule.getText() != null
-                ? binding.actvModule.getText().toString() : "";
-        int moduleIdx = moduleNames.indexOf(selectedModuleName);
-        String moduleId = (moduleIdx > 0 && moduleIdx < moduleIds.size()) ? moduleIds.get(moduleIdx) : null;
 
         String description = binding.etDescription.getText() != null
                 ? binding.etDescription.getText().toString().trim() : null;
@@ -313,7 +357,6 @@ public class EventBottomSheetFragment extends BottomSheetDialogFragment {
             recurrenceEndMs = recurrenceEndDate != null ? recurrenceEndDate.getTimeInMillis() : null;
         }
 
-        CalendarEvent editing = viewModel.getEditingEvent().getValue();
         if (editing != null) {
             editing.setTitle(title);
             editing.setType(type);
@@ -323,6 +366,12 @@ public class EventBottomSheetFragment extends BottomSheetDialogFragment {
             editing.setModuleId(moduleId);
             editing.setDescription(description);
             viewModel.updateEvent(editing);
+            // Sync date and description back to the linked assessment (calendar → assessment)
+            if (isAssessmentEvent) {
+                AppDatabase db = AppDatabase.getDatabase(requireContext());
+                new AssessmentRepositoryImpl(db.assessmentDao())
+                        .updateDueDateAndNotes(editing.getLinkedAssessmentId(), startMs, description);
+            }
             Toast.makeText(getContext(), "Event updated", Toast.LENGTH_SHORT).show();
         } else {
             viewModel.addEvent(title, type, startMs, endMs, allDay, moduleId, description,

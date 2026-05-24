@@ -63,6 +63,7 @@
                 android:visibility="gone"
                 tools:text="Dr. Smith"
                 tools:visibility="visible" />
+
         </LinearLayout>
 
         <!-- Archived badge — visible only for archived modules -->

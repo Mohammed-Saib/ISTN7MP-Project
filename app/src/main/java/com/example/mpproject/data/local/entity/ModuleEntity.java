@@ -7,6 +7,8 @@ import androidx.room.PrimaryKey;
 
 // A course or subject the user is enrolled in.
 // Standalone — no university entity above it in this schema.
+// Duplicate module names are intentionally allowed: each module has a unique UUID primary key,
+// so two modules with the same name are treated as separate entries. No unique constraint on (userId, name).
 @Entity(tableName = "modules",
         indices = {@Index("userId")}) // fast query for all modules belonging to a user
 public class ModuleEntity {
