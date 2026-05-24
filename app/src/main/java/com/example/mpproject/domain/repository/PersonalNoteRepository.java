@@ -1,3 +1,4 @@
+
 package com.example.mpproject.domain.repository;
 
 import androidx.lifecycle.LiveData;
@@ -11,6 +12,9 @@ public interface PersonalNoteRepository {
     void insert(PersonalNote note);
     void update(PersonalNote note);
     void delete(PersonalNote note);
+
+    // Pull/sync personal notes from Firestore into Room cache
+    void syncFromFirestore(String userId);
 
     LiveData<PersonalNote> getById(String noteId);
 

@@ -9,7 +9,6 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
 public class DatabaseMigrations {
 
     // v2 → v3: adds recurrence support columns to todos and calendar_events.
-    // All three columns are nullable so existing rows keep their data and receive NULL for the new fields.
     public static final Migration MIGRATION_2_3 = new Migration(2, 3) {
         @Override
         public void migrate(SupportSQLiteDatabase db) {
@@ -52,9 +51,38 @@ public class DatabaseMigrations {
                     + "createdAt INTEGER NOT NULL DEFAULT 0, "
                     + "updatedAt INTEGER NOT NULL DEFAULT 0, "
                     + "FOREIGN KEY(moduleId) REFERENCES modules(moduleId) ON DELETE CASCADE)");
+
             db.execSQL("CREATE INDEX IF NOT EXISTS index_assessments_moduleId ON assessments(moduleId)");
             db.execSQL("CREATE INDEX IF NOT EXISTS index_assessments_userId ON assessments(userId)");
+
             db.execSQL("ALTER TABLE calendar_events ADD COLUMN linkedAssessmentId TEXT");
+        }
+    };
+
+    // v5 → v6: creates personal note attachments table.
+    public static final Migration MIGRATION_5_6 = new Migration(5, 6) {
+        @Override
+        public void migrate(SupportSQLiteDatabase db) {
+            db.execSQL("CREATE TABLE IF NOT EXISTS `personal_note_attachments` ("
+                    + "`attachmentId` TEXT NOT NULL, "
+                    + "`noteId` TEXT, "
+                    + "`userId` TEXT, "
+                    + "`fileName` TEXT, "
+                    + "`fileType` TEXT, "
+                    + "`fileSizeBytes` INTEGER NOT NULL, "
+                    + "`storagePath` TEXT, "
+                    + "`downloadUrl` TEXT, "
+                    + "`uploadStatus` TEXT, "
+                    + "`createdAt` INTEGER NOT NULL, "
+                    + "PRIMARY KEY(`attachmentId`), "
+                    + "FOREIGN KEY(`noteId`) REFERENCES `personal_notes`(`noteId`) "
+                    + "ON UPDATE NO ACTION ON DELETE CASCADE)");
+
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_personal_note_attachments_noteId` "
+                    + "ON `personal_note_attachments` (`noteId`)");
+
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_personal_note_attachments_userId` "
+                    + "ON `personal_note_attachments` (`userId`)");
         }
     };
 

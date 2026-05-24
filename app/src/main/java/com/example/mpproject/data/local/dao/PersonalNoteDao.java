@@ -25,6 +25,9 @@ public interface PersonalNoteDao {
     @Delete
     void delete(PersonalNoteEntity note);
 
+    @Query("DELETE FROM personal_notes WHERE userId = :userId")
+    void deleteAllByUser(String userId);
+
     // Look up a single note by its UUID
     @Query("SELECT * FROM personal_notes WHERE noteId = :noteId")
     LiveData<PersonalNoteEntity> getById(String noteId);

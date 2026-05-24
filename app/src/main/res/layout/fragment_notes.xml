@@ -3,114 +3,319 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?android:colorBackground">
+    android:background="#AFC4E3">
 
-    <!-- ── Top bar with search ── -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="?android:colorBackground"
-        android:elevation="4dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingHorizontal="20dp"
-        android:paddingTop="52dp"
-        android:paddingBottom="12dp">
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/title_notes"
-            android:textColor="?attr/colorOnBackground"
-            android:textSize="20sp"
-            android:textStyle="bold" />
-
-        <ImageButton
-            android:id="@+id/btn_search"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="@drawable/bg_circle_surface"
-            android:contentDescription="Search notes"
-            android:src="@drawable/ic_search"
-            app:tint="?attr/colorOnSurface" />
-
-        <ImageButton
-            android:id="@+id/btn_settings"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_marginStart="8dp"
-            android:background="@drawable/bg_circle_surface"
-            android:contentDescription="Settings"
-            android:src="@drawable/ic_settings"
-            app:tint="?attr/colorOnSurface" />
-    </LinearLayout>
-
-    <!-- ── Main content below the top bar ── -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="108dp"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:paddingStart="22dp"
+        android:paddingTop="44dp"
+        android:paddingEnd="22dp"
+        android:paddingBottom="0dp">
 
-        <!-- Filter chips: All / Modules / Personal -->
-        <HorizontalScrollView
+        <!-- Title row with settings icon moved out of search bar -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:id="@+id/txt_notes_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="serif"
+                android:gravity="center"
+                android:text="Notes Library"
+                android:textColor="#050505"
+                android:textSize="27sp"
+                android:textStyle="bold" />
+
+            <ImageButton
+                android:id="@+id/btn_settings"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:layout_gravity="end|center_vertical"
+                android:background="@android:color/transparent"
+                android:contentDescription="Settings"
+                android:padding="7dp"
+                android:src="@drawable/ic_settings"
+                app:tint="#050505" />
+
+        </FrameLayout>
+
+        <!-- Hidden summary kept for Java compatibility -->
+        <TextView
+            android:id="@+id/txt_notes_summary"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingHorizontal="16dp"
-            android:paddingBottom="8dp"
-            android:scrollbars="none">
+            android:text="0 notes found"
+            android:visibility="gone" />
 
-            <com.google.android.material.chip.ChipGroup
-                android:id="@+id/chip_group_filter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                app:selectionRequired="true"
-                app:singleSelection="true">
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chip_all"
-                    style="@style/Widget.Material3.Chip.Filter"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:checked="true"
-                    android:text="@string/filter_all" />
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chip_modules"
-                    style="@style/Widget.Material3.Chip.Filter"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/filter_modules" />
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chip_personal"
-                    style="@style/Widget.Material3.Chip.Filter"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/filter_personal" />
-            </com.google.android.material.chip.ChipGroup>
-        </HorizontalScrollView>
-
-        <!-- Notes list — wired to data in a future task -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rv_notes"
+        <!-- Search bar -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:clipToPadding="false"
-            android:paddingHorizontal="16dp"
-            android:paddingBottom="80dp" />
+            android:layout_height="40dp"
+            android:layout_marginTop="12dp"
+            app:cardBackgroundColor="#FFFFFF"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="0dp"
+            app:strokeColor="#E8E0D6"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:contentDescription="Search"
+                    android:src="@drawable/ic_search"
+                    app:tint="#050505" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/search_input_layout"
+                    style="@style/Widget.Material3.TextInputLayout.FilledBox"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:hint=""
+                    app:boxBackgroundColor="@android:color/transparent"
+                    app:boxStrokeWidth="0dp"
+                    app:boxStrokeWidthFocused="0dp"
+                    app:endIconMode="none"
+                    app:hintEnabled="false">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/search_input"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@android:color/transparent"
+                        android:fontFamily="serif"
+                        android:hint="Search...."
+                        android:imeOptions="actionSearch"
+                        android:includeFontPadding="false"
+                        android:inputType="text"
+                        android:paddingStart="8dp"
+                        android:paddingTop="0dp"
+                        android:paddingEnd="8dp"
+                        android:paddingBottom="0dp"
+                        android:singleLine="true"
+                        android:textColor="#050505"
+                        android:textColorHint="#2D2D2D"
+                        android:textSize="14sp" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Main note type filter buttons -->
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chip_group_filter"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="17dp"
+            android:gravity="center"
+            app:selectionRequired="true"
+            app:singleLine="true"
+            app:singleSelection="true">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_all"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="105dp"
+                android:layout_height="34dp"
+                android:checked="true"
+                android:checkable="true"
+                android:fontFamily="serif"
+                android:gravity="center"
+                android:text="All Notes"
+                android:textAlignment="center"
+                android:textColor="#050505"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                app:checkedIconVisible="false"
+                app:chipBackgroundColor="#FFFFFF"
+                app:chipCornerRadius="8dp"
+                app:chipMinHeight="34dp"
+                app:chipStrokeColor="#050505"
+                app:chipStrokeWidth="1.5dp"
+                app:rippleColor="#DDE8F7" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_modules"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="115dp"
+                android:layout_height="34dp"
+                android:layout_marginStart="6dp"
+                android:checkable="true"
+                android:fontFamily="serif"
+                android:gravity="center"
+                android:text="Module Notes"
+                android:textAlignment="center"
+                android:textColor="#050505"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                app:checkedIconVisible="false"
+                app:chipBackgroundColor="#FFFFFF"
+                app:chipCornerRadius="8dp"
+                app:chipMinHeight="34dp"
+                app:chipStrokeColor="#050505"
+                app:chipStrokeWidth="1.5dp"
+                app:rippleColor="#DDE8F7" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_personal"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="119dp"
+                android:layout_height="34dp"
+                android:layout_marginStart="6dp"
+                android:checkable="true"
+                android:fontFamily="serif"
+                android:gravity="center"
+                android:text="Personal Notes"
+                android:textAlignment="center"
+                android:textColor="#050505"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                app:checkedIconVisible="false"
+                app:chipBackgroundColor="#FFFFFF"
+                app:chipCornerRadius="8dp"
+                app:chipMinHeight="34dp"
+                app:chipStrokeColor="#050505"
+                app:chipStrokeWidth="1.5dp"
+                app:rippleColor="#DDE8F7" />
+
+        </com.google.android.material.chip.ChipGroup>
+
+        <!-- Module filter dropdown -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/module_filter_card"
+            android:layout_width="match_parent"
+            android:layout_height="42dp"
+            android:layout_marginTop="10dp"
+            app:cardBackgroundColor="#FFFFFF"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="0dp"
+            app:strokeColor="#050505"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="12dp"
+                android:paddingEnd="10dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="serif"
+                    android:text="Module:"
+                    android:textColor="#050505"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <Spinner
+                    android:id="@+id/spinner_module_filter"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:background="@android:color/transparent"
+                    android:paddingStart="4dp"
+                    android:paddingEnd="4dp"
+                    android:spinnerMode="dropdown" />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Section heading -->
+        <TextView
+            android:id="@+id/txt_section_heading"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="15dp"
+            android:fontFamily="serif"
+            android:text="All Notes"
+            android:textColor="#050505"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <!-- Notes list -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginTop="10dp"
+            android:layout_weight="1">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rv_notes"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:paddingStart="0dp"
+                android:paddingTop="4dp"
+                android:paddingEnd="0dp"
+                android:paddingBottom="108dp" />
+
+            <LinearLayout
+                android:id="@+id/empty_state"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="26dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="serif"
+                    android:gravity="center"
+                    android:text="No notes found"
+                    android:textColor="#050505"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:fontFamily="serif"
+                    android:gravity="center"
+                    android:text="Add a personal note, upload a module file, or clear your search/filter."
+                    android:textColor="#1E2B40"
+                    android:textSize="14sp" />
+
+            </LinearLayout>
+        </FrameLayout>
+
     </LinearLayout>
 
-    <!-- FAB to create a new note -->
+    <!-- Add note button -->
     <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
         android:id="@+id/fab_add_note"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_margin="20dp"
-        android:text="New Note"
+        android:layout_marginEnd="24dp"
+        android:layout_marginBottom="20dp"
+        android:fontFamily="serif"
+        android:text="Add Note"
+        android:textColor="#061A33"
+        android:textStyle="bold"
+        app:backgroundTint="#D7E5FF"
+        app:cornerRadius="28dp"
+        app:elevation="6dp"
         app:icon="@drawable/ic_add"
-        app:shapeAppearanceOverlay="@style/ShapeAppearance.MPProject.FAB" />
+        app:iconTint="#061A33" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

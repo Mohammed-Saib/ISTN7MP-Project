@@ -37,6 +37,7 @@ public class ModuleNote {
     public long getFileSizeBytes() { return fileSizeBytes; }
     public long getCreatedAt() { return createdAt; }
 
+    public void setTitle(String title) { this.title = title; }
     public void setStorageUri(String storageUri) { this.storageUri = storageUri; }
     public void setUploadStatus(String uploadStatus) { this.uploadStatus = uploadStatus; }
     public void setFileSizeBytes(long fileSizeBytes) { this.fileSizeBytes = fileSizeBytes; }
