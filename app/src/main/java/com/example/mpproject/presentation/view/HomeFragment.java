@@ -56,6 +56,8 @@ public class HomeFragment extends Fragment {
                 Navigation.findNavController(v).navigate(R.id.tasksFragment));
         binding.btnSeeCalendar.setOnClickListener(v ->
                 Navigation.findNavController(v).navigate(R.id.calendarFragment));
+
+        binding.btnTimer.setOnClickListener(v -> Navigation.findNavController(v).navigate(R.id.timerFragment));
     }
 
     // Builds a time-aware greeting using the signed-in user's display name or a generic fallback

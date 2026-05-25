@@ -57,7 +57,8 @@
                 android:background="@drawable/bg_circle_surface"
                 android:contentDescription="Settings"
                 android:src="@drawable/ic_settings"
-                app:tint="?attr/colorOnSurface" />
+                app:tint="?attr/colorOnSurface"
+                tools:ignore="TouchTargetSizeCheck" />
         </LinearLayout>
 
         <!-- ── Quick-capture buttons ── -->
@@ -191,5 +192,19 @@
             android:textColor="?attr/colorOnSurface"
             android:textSize="14sp" />
 
+        <TextView
+            android:id="@+id/btnTimer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_rounded_surface"
+            android:gravity="center"
+            android:padding="20dp"
+            android:text="Go to pomodoro timer"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="14sp"
+            />
     </LinearLayout>
+
 </ScrollView>

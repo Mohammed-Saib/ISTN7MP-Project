@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Full-screen background image -->
+    <ImageView
+        android:id="@+id/imgBackground"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:src="@drawable/lmlogo_focus"
+        android:contentDescription="@string/background" />
+
+    <!-- All content on top of the background -->
+    <LinearLayout
+        android:id="@+id/contentContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:layout_marginTop="120dp">
+
+        <!-- Mode tabs row -->
+        <LinearLayout
+            android:id="@+id/tabRow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="@drawable/tab_row_bg">
+
+            <TextView
+                android:id="@+id/tabFocus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/focus"
+                android:textSize="14sp"
+                android:fontFamily="serif"
+                android:textStyle="bold"
+                android:paddingHorizontal="18dp"
+                android:paddingVertical="8dp"
+                android:background="@drawable/tab_active_bg"
+                android:textColor="#FFFFFF" />
+
+            <TextView
+                android:id="@+id/tabShortBreak"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/short_break"
+                android:textSize="14sp"
+                android:fontFamily="serif"
+                android:paddingHorizontal="18dp"
+                android:paddingVertical="8dp"
+                android:textColor="#CCFFFFFF" />
+
+            <TextView
+                android:id="@+id/tabLongBreak"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/long_break"
+                android:textSize="14sp"
+                android:fontFamily="serif"
+                android:paddingHorizontal="18dp"
+                android:paddingVertical="8dp"
+                android:textColor="#CCFFFFFF" />
+
+
+
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/btnPlay"
+            android:layout_width="46dp"
+            android:layout_height="34dp"
+            android:layout_marginTop="20dp"
+            android:background="@android:color/transparent"
+            android:contentDescription="@string/play"
+            android:scaleType="fitCenter"
+            android:src="@drawable/btn_play"
+            tools:ignore="TouchTargetSizeCheck" />
+
+        <ImageButton
+            android:id="@+id/btnPause"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_marginTop="20dp"
+            android:background="@android:color/transparent"
+            android:contentDescription="@string/pause"
+            android:scaleType="fitCenter"
+            android:src="@drawable/btn_pause"
+            android:visibility="gone" />
+
+        <!-- Countdown timer -->
+        <TextView
+            android:id="@+id/txtTimer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="1dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="180dp"
+            android:fontFamily="serif"
+            android:text="25:00"
+            android:textColor="#FFFFFF"
+            android:textSize="80sp"
+            android:textStyle="bold" />
+
+
+    </LinearLayout>
+
+    <!-- Floating settings button (bottom-left) -->
+    <ImageButton
+        android:id="@+id/btnSettings"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_gravity="bottom|start"
+        android:layout_marginStart="16dp"
+        android:layout_marginBottom="90dp"
+        android:src="@drawable/btn_setting"
+        android:background="@drawable/setting_bg"
+        android:contentDescription="@string/settings"
+        android:scaleType="fitCenter"
+        android:padding="10dp" />
+
+</FrameLayout>
