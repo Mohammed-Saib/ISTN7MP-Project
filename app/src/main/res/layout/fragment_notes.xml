@@ -14,7 +14,6 @@
         android:paddingEnd="22dp"
         android:paddingBottom="0dp">
 
-        <!-- Title row with settings icon moved out of search bar -->
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
@@ -43,7 +42,6 @@
 
         </FrameLayout>
 
-        <!-- Hidden summary kept for Java compatibility -->
         <TextView
             android:id="@+id/txt_notes_summary"
             android:layout_width="match_parent"
@@ -51,7 +49,6 @@
             android:text="0 notes found"
             android:visibility="gone" />
 
-        <!-- Search bar -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="40dp"
@@ -114,13 +111,14 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Main note type filter buttons -->
         <com.google.android.material.chip.ChipGroup
             android:id="@+id/chip_group_filter"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="17dp"
             android:gravity="center"
+            app:chipSpacingHorizontal="5dp"
+            app:chipSpacingVertical="6dp"
             app:selectionRequired="true"
             app:singleLine="true"
             app:singleSelection="true">
@@ -128,72 +126,78 @@
             <com.google.android.material.chip.Chip
                 android:id="@+id/chip_all"
                 style="@style/Widget.Material3.Chip.Filter"
-                android:layout_width="105dp"
+                android:layout_width="96dp"
                 android:layout_height="34dp"
                 android:checked="true"
                 android:checkable="true"
                 android:fontFamily="serif"
                 android:gravity="center"
+                android:minWidth="0dp"
+                android:paddingStart="0dp"
+                android:paddingEnd="0dp"
                 android:text="All Notes"
                 android:textAlignment="center"
-                android:textColor="#050505"
-                android:textSize="13sp"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
                 android:textStyle="bold"
                 app:checkedIconVisible="false"
-                app:chipBackgroundColor="#FFFFFF"
-                app:chipCornerRadius="8dp"
+                app:chipBackgroundColor="#2F9E8F"
+                app:chipCornerRadius="9dp"
                 app:chipMinHeight="34dp"
                 app:chipStrokeColor="#050505"
-                app:chipStrokeWidth="1.5dp"
+                app:chipStrokeWidth="1.2dp"
                 app:rippleColor="#DDE8F7" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/chip_modules"
                 style="@style/Widget.Material3.Chip.Filter"
-                android:layout_width="115dp"
+                android:layout_width="108dp"
                 android:layout_height="34dp"
-                android:layout_marginStart="6dp"
                 android:checkable="true"
                 android:fontFamily="serif"
                 android:gravity="center"
+                android:minWidth="0dp"
+                android:paddingStart="0dp"
+                android:paddingEnd="0dp"
                 android:text="Module Notes"
                 android:textAlignment="center"
                 android:textColor="#050505"
-                android:textSize="13sp"
+                android:textSize="12sp"
                 android:textStyle="bold"
                 app:checkedIconVisible="false"
                 app:chipBackgroundColor="#FFFFFF"
-                app:chipCornerRadius="8dp"
+                app:chipCornerRadius="9dp"
                 app:chipMinHeight="34dp"
                 app:chipStrokeColor="#050505"
-                app:chipStrokeWidth="1.5dp"
+                app:chipStrokeWidth="1.2dp"
                 app:rippleColor="#DDE8F7" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/chip_personal"
                 style="@style/Widget.Material3.Chip.Filter"
-                android:layout_width="119dp"
+                android:layout_width="118dp"
                 android:layout_height="34dp"
-                android:layout_marginStart="6dp"
                 android:checkable="true"
                 android:fontFamily="serif"
                 android:gravity="center"
+                android:minWidth="0dp"
+                android:paddingStart="0dp"
+                android:paddingEnd="0dp"
                 android:text="Personal Notes"
                 android:textAlignment="center"
                 android:textColor="#050505"
-                android:textSize="13sp"
+                android:textSize="12sp"
                 android:textStyle="bold"
                 app:checkedIconVisible="false"
                 app:chipBackgroundColor="#FFFFFF"
-                app:chipCornerRadius="8dp"
+                app:chipCornerRadius="9dp"
                 app:chipMinHeight="34dp"
                 app:chipStrokeColor="#050505"
-                app:chipStrokeWidth="1.5dp"
+                app:chipStrokeWidth="1.2dp"
                 app:rippleColor="#DDE8F7" />
 
         </com.google.android.material.chip.ChipGroup>
 
-        <!-- Module filter dropdown -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/module_filter_card"
             android:layout_width="match_parent"
@@ -237,7 +241,6 @@
 
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Section heading -->
         <TextView
             android:id="@+id/txt_section_heading"
             android:layout_width="match_parent"
@@ -249,7 +252,6 @@
             android:textSize="22sp"
             android:textStyle="bold" />
 
-        <!-- Notes list -->
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
@@ -300,7 +302,6 @@
 
     </LinearLayout>
 
-    <!-- Add note button -->
     <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
         android:id="@+id/fab_add_note"
         android:layout_width="wrap_content"
