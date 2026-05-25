@@ -20,6 +20,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
     public interface OnNoteActionListener {
         void onOpen(NoteListItem item);
         void onRename(NoteListItem item);
+        void onMoveToFolder(NoteListItem item);
         void onDelete(NoteListItem item);
     }
 
@@ -95,8 +96,10 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
 
             binding.btnNoteMore.setOnClickListener(v -> {
                 PopupMenu menu = new PopupMenu(v.getContext(), binding.btnNoteMore);
+
                 menu.getMenu().add("Open");
                 menu.getMenu().add("Rename");
+                menu.getMenu().add("Move to folder");
                 menu.getMenu().add("Delete");
 
                 menu.setOnMenuItemClickListener(menuItem -> {
@@ -106,6 +109,8 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
                         listener.onOpen(item);
                     } else if (action.equals("Rename")) {
                         listener.onRename(item);
+                    } else if (action.equals("Move to folder")) {
+                        listener.onMoveToFolder(item);
                     } else if (action.equals("Delete")) {
                         listener.onDelete(item);
                     }

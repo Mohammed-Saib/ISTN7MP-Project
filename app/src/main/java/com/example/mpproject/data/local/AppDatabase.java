@@ -10,6 +10,7 @@ import com.example.mpproject.data.local.dao.AssessmentDao;
 import com.example.mpproject.data.local.dao.CalendarEventDao;
 import com.example.mpproject.data.local.dao.ModuleDao;
 import com.example.mpproject.data.local.dao.ModuleNoteDao;
+import com.example.mpproject.data.local.dao.NoteFolderDao;
 import com.example.mpproject.data.local.dao.PersonalNoteAttachmentDao;
 import com.example.mpproject.data.local.dao.PersonalNoteDao;
 import com.example.mpproject.data.local.dao.TodoDao;
@@ -18,6 +19,7 @@ import com.example.mpproject.data.local.entity.AssessmentEntity;
 import com.example.mpproject.data.local.entity.CalendarEventEntity;
 import com.example.mpproject.data.local.entity.ModuleEntity;
 import com.example.mpproject.data.local.entity.ModuleNoteEntity;
+import com.example.mpproject.data.local.entity.NoteFolderEntity;
 import com.example.mpproject.data.local.entity.PersonalNoteAttachmentEntity;
 import com.example.mpproject.data.local.entity.PersonalNoteEntity;
 import com.example.mpproject.data.local.entity.TodoEntity;
@@ -26,7 +28,6 @@ import com.example.mpproject.data.local.entity.UserEntity;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-// Version bumped to 6 — adds personal_note_attachments table
 @Database(
         entities = {
                 UserEntity.class,
@@ -36,9 +37,10 @@ import java.util.concurrent.Executors;
                 PersonalNoteAttachmentEntity.class,
                 TodoEntity.class,
                 CalendarEventEntity.class,
-                AssessmentEntity.class
+                AssessmentEntity.class,
+                NoteFolderEntity.class
         },
-        version = 6,
+        version = 7,
         exportSchema = true
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -51,6 +53,7 @@ public abstract class AppDatabase extends RoomDatabase {
     public abstract TodoDao todoDao();
     public abstract CalendarEventDao calendarEventDao();
     public abstract AssessmentDao assessmentDao();
+    public abstract NoteFolderDao noteFolderDao();
 
     private static volatile AppDatabase INSTANCE;
 
@@ -69,7 +72,8 @@ public abstract class AppDatabase extends RoomDatabase {
                                     DatabaseMigrations.MIGRATION_2_3,
                                     DatabaseMigrations.MIGRATION_3_4,
                                     DatabaseMigrations.MIGRATION_4_5,
-                                    DatabaseMigrations.MIGRATION_5_6
+                                    DatabaseMigrations.MIGRATION_5_6,
+                                    DatabaseMigrations.MIGRATION_6_7
                             )
                             .build();
                 }

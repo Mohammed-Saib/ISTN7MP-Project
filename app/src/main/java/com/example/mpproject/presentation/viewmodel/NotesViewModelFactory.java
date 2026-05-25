@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.example.mpproject.domain.repository.ModuleNoteRepository;
 import com.example.mpproject.domain.repository.ModuleRepository;
+import com.example.mpproject.domain.repository.NoteFolderRepository;
 import com.example.mpproject.domain.repository.PersonalNoteAttachmentRepository;
 import com.example.mpproject.domain.repository.PersonalNoteRepository;
 
@@ -16,19 +17,22 @@ public class NotesViewModelFactory implements ViewModelProvider.Factory {
     private final ModuleNoteRepository moduleNoteRepository;
     private final PersonalNoteRepository personalNoteRepository;
     private final PersonalNoteAttachmentRepository personalNoteAttachmentRepository;
+    private final NoteFolderRepository noteFolderRepository;
 
     public NotesViewModelFactory(
             String userId,
             ModuleRepository moduleRepository,
             ModuleNoteRepository moduleNoteRepository,
             PersonalNoteRepository personalNoteRepository,
-            PersonalNoteAttachmentRepository personalNoteAttachmentRepository
+            PersonalNoteAttachmentRepository personalNoteAttachmentRepository,
+            NoteFolderRepository noteFolderRepository
     ) {
         this.userId = userId;
         this.moduleRepository = moduleRepository;
         this.moduleNoteRepository = moduleNoteRepository;
         this.personalNoteRepository = personalNoteRepository;
         this.personalNoteAttachmentRepository = personalNoteAttachmentRepository;
+        this.noteFolderRepository = noteFolderRepository;
     }
 
     @NonNull
@@ -41,7 +45,8 @@ public class NotesViewModelFactory implements ViewModelProvider.Factory {
                     moduleRepository,
                     moduleNoteRepository,
                     personalNoteRepository,
-                    personalNoteAttachmentRepository
+                    personalNoteAttachmentRepository,
+                    noteFolderRepository
             );
         }
 

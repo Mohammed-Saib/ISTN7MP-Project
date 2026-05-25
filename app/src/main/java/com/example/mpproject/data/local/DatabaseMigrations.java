@@ -86,5 +86,32 @@ public class DatabaseMigrations {
         }
     };
 
+    // v6 → v7: adds note folders and optional folder links on personal/module notes.
+    public static final Migration MIGRATION_6_7 = new Migration(6, 7) {
+        @Override
+        public void migrate(SupportSQLiteDatabase db) {
+            db.execSQL("CREATE TABLE IF NOT EXISTS `note_folders` ("
+                    + "`folderId` TEXT NOT NULL, "
+                    + "`userId` TEXT, "
+                    + "`name` TEXT, "
+                    + "`createdAt` INTEGER NOT NULL, "
+                    + "`updatedAt` INTEGER NOT NULL, "
+                    + "PRIMARY KEY(`folderId`))");
+
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_note_folders_userId` "
+                    + "ON `note_folders` (`userId`)");
+
+            db.execSQL("ALTER TABLE `personal_notes` ADD COLUMN `folderId` TEXT");
+
+            db.execSQL("ALTER TABLE `module_notes` ADD COLUMN `folderId` TEXT");
+
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_personal_notes_folderId` "
+                    + "ON `personal_notes` (`folderId`)");
+
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_module_notes_folderId` "
+                    + "ON `module_notes` (`folderId`)");
+        }
+    };
+
     private DatabaseMigrations() {}
 }

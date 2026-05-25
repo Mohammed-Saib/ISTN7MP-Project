@@ -81,6 +81,7 @@ public class PersonalNoteRepositoryImpl implements PersonalNoteRepository {
                                     e.setNoteId(doc.getId());
                                     e.setUserId(userId);
                                     e.setModuleId(doc.getString("moduleId"));
+                                    e.setFolderId(doc.getString("folderId"));
                                     e.setTitle(doc.getString("title"));
                                     e.setContent(doc.getString("content"));
                                     e.setShareCode(doc.getString("shareCode"));
@@ -131,6 +132,7 @@ public class PersonalNoteRepositoryImpl implements PersonalNoteRepository {
             data.put("title", note.getTitle());
             data.put("content", note.getContent());
             data.put("moduleId", note.getModuleId());
+            data.put("folderId", note.getFolderId());
             data.put("isPinned", note.isPinned());
             data.put("isShared", note.isShared());
             data.put("shareCode", note.getShareCode());
@@ -151,6 +153,7 @@ public class PersonalNoteRepositoryImpl implements PersonalNoteRepository {
 
         PersonalNote note = new PersonalNote(e.getNoteId(), e.getUserId(), e.getTitle());
         note.setModuleId(e.getModuleId());
+        note.setFolderId(e.getFolderId());
         note.setContent(e.getContent());
         note.setShareCode(e.getShareCode());
         note.setPinned(e.isPinned());
@@ -179,6 +182,7 @@ public class PersonalNoteRepositoryImpl implements PersonalNoteRepository {
         e.setNoteId(note.getNoteId());
         e.setUserId(note.getUserId());
         e.setModuleId(note.getModuleId());
+        e.setFolderId(note.getFolderId());
         e.setTitle(note.getTitle());
         e.setContent(note.getContent());
         e.setShareCode(note.getShareCode());

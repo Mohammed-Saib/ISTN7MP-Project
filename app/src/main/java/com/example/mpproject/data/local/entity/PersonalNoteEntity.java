@@ -6,53 +6,125 @@ import androidx.room.ForeignKey;
 import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
-// The user's own typed notes. Freeform — not required to belong to a module.
-// Content is stored as Markdown so formatting (bold, italic, headings) is preserved.
-@Entity(tableName = "personal_notes",
+@Entity(
+        tableName = "personal_notes",
         foreignKeys = @ForeignKey(
                 entity = ModuleEntity.class,
                 parentColumns = "moduleId",
                 childColumns = "moduleId",
-                onDelete = ForeignKey.SET_NULL), // deleting a module sets moduleId to null here (no cascade)
+                onDelete = ForeignKey.SET_NULL
+        ),
         indices = {
-                @Index({"userId", "isPinned"}), // pinned notes first, then by updatedAt
-                @Index("moduleId")              // find all notes linked to a specific module
-        })
+                @Index("folderId"),
+                @Index("moduleId"),
+                @Index(value = {"userId", "isPinned"})
+        }
+)
 public class PersonalNoteEntity {
 
     @PrimaryKey
     @NonNull
-    private String noteId;     // UUID
-    private String userId;     // owner
-    private String moduleId;   // optional link to a module; null if not linked or if module was deleted
+    private String noteId;
+
+    private String userId;
+    private String moduleId;
+    private String folderId;
     private String title;
-    private String content;    // Markdown body; empty string for a brand-new note
-    private boolean isPinned;  // pinned notes appear at the top of the list
-    private boolean isShared;  // true when a shared_notes Firestore document exists for this note
-    private String shareCode;  // short alphanumeric code, e.g. 'xK9mP2'; kept for reuse after unsharing
-    private long createdAt;    // unix ms
-    private long updatedAt;    // unix ms; updated on every auto-save
+    private String content;
+    private String shareCode;
+    private boolean isPinned;
+    private boolean isShared;
+    private long createdAt;
+    private long updatedAt;
 
     public PersonalNoteEntity() {}
 
-    @NonNull public String getNoteId() { return noteId; }
-    public void setNoteId(@NonNull String noteId) { this.noteId = noteId; }
-    public String getUserId() { return userId; }
-    public void setUserId(String userId) { this.userId = userId; }
-    public String getModuleId() { return moduleId; }
-    public void setModuleId(String moduleId) { this.moduleId = moduleId; }
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
-    public String getContent() { return content; }
-    public void setContent(String content) { this.content = content; }
-    public boolean isPinned() { return isPinned; }
-    public void setPinned(boolean pinned) { isPinned = pinned; }
-    public boolean isShared() { return isShared; }
-    public void setShared(boolean shared) { isShared = shared; }
-    public String getShareCode() { return shareCode; }
-    public void setShareCode(String shareCode) { this.shareCode = shareCode; }
-    public long getCreatedAt() { return createdAt; }
-    public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }
-    public long getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(long updatedAt) { this.updatedAt = updatedAt; }
+    @NonNull
+    public String getNoteId() {
+        return noteId;
+    }
+
+    public void setNoteId(@NonNull String noteId) {
+        this.noteId = noteId;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+
+    public String getModuleId() {
+        return moduleId;
+    }
+
+    public void setModuleId(String moduleId) {
+        this.moduleId = moduleId;
+    }
+
+    public String getFolderId() {
+        return folderId;
+    }
+
+    public void setFolderId(String folderId) {
+        this.folderId = folderId;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getContent() {
+        return content;
+    }
+
+    public void setContent(String content) {
+        this.content = content;
+    }
+
+    public String getShareCode() {
+        return shareCode;
+    }
+
+    public void setShareCode(String shareCode) {
+        this.shareCode = shareCode;
+    }
+
+    public boolean isPinned() {
+        return isPinned;
+    }
+
+    public void setPinned(boolean pinned) {
+        isPinned = pinned;
+    }
+
+    public boolean isShared() {
+        return isShared;
+    }
+
+    public void setShared(boolean shared) {
+        isShared = shared;
+    }
+
+    public long getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(long createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public long getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(long updatedAt) {
+        this.updatedAt = updatedAt;
+    }
 }

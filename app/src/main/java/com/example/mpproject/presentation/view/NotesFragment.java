@@ -72,6 +72,8 @@ import com.example.mpproject.presentation.adapter.NotesAdapter;
 import com.example.mpproject.presentation.model.NoteListItem;
 import com.example.mpproject.presentation.viewmodel.NotesViewModel;
 import com.example.mpproject.presentation.viewmodel.NotesViewModelFactory;
+import com.example.mpproject.data.repository.NoteFolderRepositoryImpl;
+import com.example.mpproject.domain.model.NoteFolder;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.auth.FirebaseAuth;
@@ -88,8 +90,16 @@ public class NotesFragment extends Fragment {
     private NotesViewModel viewModel;
     private NotesAdapter adapter;
     private List<Module> currentModules = new ArrayList<>();
+    private List<NoteFolder> currentFolders = new ArrayList<>();
     private String pendingUploadTitle;
     private String pendingUploadModuleId;
+    private String pendingUploadFolderId;
+    private boolean populatingModuleFilter = false;
+    private boolean populatingFolderFilter = false;
+    private String selectedModuleFilterId = null;
+    private String selectedFolderFilterId = null;
+    private String incomingModuleFilterId = null;
+    private boolean incomingModuleFilterApplied = false;
     private ActivityResultLauncher<String[]> moduleFilePickerLauncher;
     private ActivityResultLauncher<String[]> personalAttachmentPickerLauncher;
     private String activeAttachmentNoteId;
@@ -159,12 +169,26 @@ public class NotesFragment extends Fragment {
                 new ModuleRepositoryImpl(db.moduleDao()),
                 new ModuleNoteRepositoryImpl(db.moduleNoteDao()),
                 new PersonalNoteRepositoryImpl(db.personalNoteDao()),
-                new PersonalNoteAttachmentRepositoryImpl(db.personalNoteAttachmentDao())
+                new PersonalNoteAttachmentRepositoryImpl(db.personalNoteAttachmentDao()),
+                new NoteFolderRepositoryImpl(db.noteFolderDao())
         );
         viewModel = new ViewModelProvider(this, factory).get(NotesViewModel.class);
+
+        readIncomingModuleFilterArgument();
+
         setupRecyclerView();
         setupButtons();
         observeData();
+
+        if (incomingModuleFilterId != null) {
+            viewModel.setFilter(NotesViewModel.FILTER_ALL);
+            viewModel.setSelectedModuleId(incomingModuleFilterId);
+            updateFilterUi(R.id.chip_all);
+
+            if (binding.chipGroupFilter != null) {
+                binding.chipGroupFilter.check(R.id.chip_all);
+            }
+        }
     }
     private void persistReadPermission(Uri uri) {
         if (uri == null || getContext() == null) return;
@@ -414,12 +438,86 @@ public class NotesFragment extends Fragment {
     }
     private void setupRecyclerView() {
         adapter = new NotesAdapter(new NotesAdapter.OnNoteActionListener() {
-            @Override public void onOpen(NoteListItem item) { handleNoteClick(item); }
-            @Override public void onRename(NoteListItem item) { showRenameNoteDialog(item); }
-            @Override public void onDelete(NoteListItem item) { showDeleteNoteDialog(item); }
+            @Override
+            public void onOpen(NoteListItem item) {
+                handleNoteClick(item);
+            }
+
+            @Override
+            public void onRename(NoteListItem item) {
+                showRenameNoteDialog(item);
+            }
+
+            @Override
+            public void onMoveToFolder(NoteListItem item) {
+                showMoveToFolderDialog(item);
+            }
+
+            @Override
+            public void onDelete(NoteListItem item) {
+                showDeleteNoteDialog(item);
+            }
         });
+
         binding.rvNotes.setLayoutManager(new LinearLayoutManager(requireContext()));
         binding.rvNotes.setAdapter(adapter);
+    }
+    private void readIncomingModuleFilterArgument() {
+        Bundle args = getArguments();
+
+        if (args == null) {
+            incomingModuleFilterId = null;
+            return;
+        }
+
+        String moduleId = args.getString("moduleId");
+
+        if (moduleId == null || moduleId.trim().isEmpty()) {
+            incomingModuleFilterId = null;
+            return;
+        }
+
+        incomingModuleFilterId = moduleId.trim();
+        selectedModuleFilterId = incomingModuleFilterId;
+    }
+
+
+    private void applyIncomingModuleFilterIfPossible() {
+        if (binding == null || viewModel == null) return;
+
+        if (incomingModuleFilterId == null || incomingModuleFilterId.trim().isEmpty()) return;
+
+        if (incomingModuleFilterApplied) return;
+
+        boolean moduleExists = false;
+
+        for (Module module : currentModules) {
+            if (incomingModuleFilterId.equals(module.getModuleId())) {
+                moduleExists = true;
+                break;
+            }
+        }
+
+        if (!moduleExists) return;
+
+        incomingModuleFilterApplied = true;
+        selectedModuleFilterId = incomingModuleFilterId;
+
+        // Important: ALL means module files + personal notes.
+        viewModel.setFilter(NotesViewModel.FILTER_ALL);
+        viewModel.setSelectedModuleId(incomingModuleFilterId);
+
+        updateFilterUi(R.id.chip_all);
+
+        if (binding.chipGroupFilter != null) {
+            binding.chipGroupFilter.check(R.id.chip_all);
+        }
+
+        int position = getModuleFilterPosition(incomingModuleFilterId);
+
+        if (binding.spinnerModuleFilter != null) {
+            binding.spinnerModuleFilter.setSelection(position, false);
+        }
     }
     private void setupButtons() {
         binding.btnSettings.setOnClickListener(v ->
@@ -460,7 +558,10 @@ public class NotesFragment extends Fragment {
         binding.spinnerModuleFilter.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (populatingModuleFilter) return;
+
                 if (position <= 0) {
+                    selectedModuleFilterId = null;
                     viewModel.setSelectedModuleId(null);
                     return;
                 }
@@ -468,13 +569,43 @@ public class NotesFragment extends Fragment {
                 int moduleIndex = position - 1;
 
                 if (moduleIndex >= 0 && moduleIndex < currentModules.size()) {
-                    viewModel.setSelectedModuleId(currentModules.get(moduleIndex).getModuleId());
+                    selectedModuleFilterId = currentModules.get(moduleIndex).getModuleId();
+                    viewModel.setSelectedModuleId(selectedModuleFilterId);
                 }
             }
 
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
+                if (populatingModuleFilter) return;
+                selectedModuleFilterId = null;
                 viewModel.setSelectedModuleId(null);
+            }
+        });
+
+        binding.spinnerFolderFilter.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (populatingFolderFilter) return;
+
+                if (position <= 0) {
+                    selectedFolderFilterId = null;
+                    viewModel.setSelectedFolderId(null);
+                    return;
+                }
+
+                int folderIndex = position - 1;
+
+                if (folderIndex >= 0 && folderIndex < currentFolders.size()) {
+                    selectedFolderFilterId = currentFolders.get(folderIndex).getFolderId();
+                    viewModel.setSelectedFolderId(selectedFolderFilterId);
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                if (populatingFolderFilter) return;
+                selectedFolderFilterId = null;
+                viewModel.setSelectedFolderId(null);
             }
         });
     }
@@ -499,6 +630,7 @@ public class NotesFragment extends Fragment {
         }
 
         // Keep this visible for all filters, including Personal Notes.
+        binding.folderFilterCard.setVisibility(View.VISIBLE);
         binding.moduleFilterCard.setVisibility(View.VISIBLE);
     }
 
@@ -531,19 +663,261 @@ public class NotesFragment extends Fragment {
             currentModules = modules != null ? modules : new ArrayList<>();
             populateModuleFilter();
         });
+        viewModel.getFolders().observe(getViewLifecycleOwner(), folders -> {
+            currentFolders = folders != null ? folders : new ArrayList<>();
+            populateFolderFilter();
+        });
     }
     private void populateModuleFilter() {
         if (binding == null) return;
+
         List<String> moduleNames = new ArrayList<>();
         moduleNames.add("All modules and personal");
+
         for (Module module : currentModules) {
             String label = module.getModuleCode() != null && !module.getModuleCode().isEmpty()
                     ? module.getModuleCode() + " - " + module.getName()
                     : module.getName();
             moduleNames.add(label);
         }
+
+        populatingModuleFilter = true;
+
         ArrayAdapter<String> moduleAdapter = createModuleSpinnerAdapter(moduleNames);
         binding.spinnerModuleFilter.setAdapter(moduleAdapter);
+
+        int safePosition = getModuleFilterPosition(selectedModuleFilterId);
+        binding.spinnerModuleFilter.setSelection(safePosition, false);
+
+        String safeModuleId = getModuleIdForFilterPosition(safePosition);
+        if ((selectedModuleFilterId == null && safeModuleId != null)
+                || (selectedModuleFilterId != null && !selectedModuleFilterId.equals(safeModuleId))) {
+            selectedModuleFilterId = safeModuleId;
+            viewModel.setSelectedModuleId(safeModuleId);
+        }
+
+        binding.spinnerModuleFilter.post(() -> {
+            populatingModuleFilter = false;
+            applyIncomingModuleFilterIfPossible();
+        });
+    }
+
+    private void populateFolderFilter() {
+        if (binding == null) return;
+
+        List<String> folderNames = new ArrayList<>();
+        folderNames.add("All folders");
+
+        for (NoteFolder folder : currentFolders) {
+            String name = folder.getName() == null || folder.getName().trim().isEmpty()
+                    ? "Untitled folder"
+                    : folder.getName();
+
+            folderNames.add("📁 " + name);
+        }
+
+        populatingFolderFilter = true;
+
+        ArrayAdapter<String> folderAdapter = createModuleSpinnerAdapter(folderNames);
+        binding.spinnerFolderFilter.setAdapter(folderAdapter);
+
+        int safePosition = getFolderFilterPosition(selectedFolderFilterId);
+        binding.spinnerFolderFilter.setSelection(safePosition, false);
+
+        String safeFolderId = getFolderIdForFilterPosition(safePosition);
+        if ((selectedFolderFilterId == null && safeFolderId != null)
+                || (selectedFolderFilterId != null && !selectedFolderFilterId.equals(safeFolderId))) {
+            selectedFolderFilterId = safeFolderId;
+            viewModel.setSelectedFolderId(safeFolderId);
+        }
+
+        binding.spinnerFolderFilter.post(() -> populatingFolderFilter = false);
+    }
+
+    private int getModuleFilterPosition(@Nullable String moduleId) {
+        if (moduleId == null || moduleId.trim().isEmpty()) return 0;
+
+        for (int i = 0; i < currentModules.size(); i++) {
+            Module module = currentModules.get(i);
+            if (moduleId.equals(module.getModuleId())) {
+                return i + 1;
+            }
+        }
+
+        return 0;
+    }
+
+    @Nullable
+    private String getModuleIdForFilterPosition(int position) {
+        if (position <= 0) return null;
+
+        int moduleIndex = position - 1;
+        if (moduleIndex >= 0 && moduleIndex < currentModules.size()) {
+            return currentModules.get(moduleIndex).getModuleId();
+        }
+
+        return null;
+    }
+
+    private int getFolderFilterPosition(@Nullable String folderId) {
+        if (folderId == null || folderId.trim().isEmpty()) return 0;
+
+        for (int i = 0; i < currentFolders.size(); i++) {
+            NoteFolder folder = currentFolders.get(i);
+            if (folderId.equals(folder.getFolderId())) {
+                return i + 1;
+            }
+        }
+
+        return 0;
+    }
+
+    @Nullable
+    private String getFolderIdForFilterPosition(int position) {
+        if (position <= 0) return null;
+
+        int folderIndex = position - 1;
+        if (folderIndex >= 0 && folderIndex < currentFolders.size()) {
+            return currentFolders.get(folderIndex).getFolderId();
+        }
+
+        return null;
+    }
+
+    private List<String> buildFolderAssignmentNames() {
+        List<String> folderNames = new ArrayList<>();
+        folderNames.add("No folder");
+
+        for (NoteFolder folder : currentFolders) {
+            String name = folder.getName() == null || folder.getName().trim().isEmpty()
+                    ? "Untitled folder"
+                    : folder.getName();
+
+            folderNames.add("📁 " + name);
+        }
+
+        return folderNames;
+    }
+
+    @Nullable
+    private String getSelectedFolderIdFromSpinner(Spinner folderSpinner) {
+        if (folderSpinner == null) return null;
+
+        int selectedIndex = folderSpinner.getSelectedItemPosition();
+
+        if (selectedIndex <= 0) return null;
+
+        int folderIndex = selectedIndex - 1;
+
+        if (folderIndex >= 0 && folderIndex < currentFolders.size()) {
+            return currentFolders.get(folderIndex).getFolderId();
+        }
+
+        return null;
+    }
+
+    private int getFolderSpinnerPosition(@Nullable String folderId) {
+        if (folderId == null || folderId.trim().isEmpty()) {
+            return 0;
+        }
+
+        for (int i = 0; i < currentFolders.size(); i++) {
+            NoteFolder folder = currentFolders.get(i);
+
+            if (folderId.equals(folder.getFolderId())) {
+                return i + 1;
+            }
+        }
+
+        return 0;
+    }
+
+    private Spinner createFolderAssignmentSpinner() {
+        Spinner folderSpinner = new Spinner(requireContext());
+        styleModuleSpinner(folderSpinner);
+        folderSpinner.setAdapter(createModuleSpinnerAdapter(buildFolderAssignmentNames()));
+        return folderSpinner;
+    }
+
+    private MaterialButton createFolderIconDropdownButton(Spinner folderSpinner) {
+        MaterialButton folderButton = new MaterialButton(requireContext());
+        folderButton.setText("📁");
+        folderButton.setTextSize(16);
+        folderButton.setAllCaps(false);
+        folderButton.setMinWidth(0);
+        folderButton.setMinimumWidth(0);
+        folderButton.setPadding(dp(8), dp(4), dp(8), dp(4));
+        folderButton.setCornerRadius(dp(14));
+        folderButton.setStrokeWidth(dp(1));
+        addButtonHint(folderButton, "Choose folder");
+
+        Runnable updateFolderButtonState = () -> {
+            boolean hasFolder = folderSpinner != null && folderSpinner.getSelectedItemPosition() > 0;
+            folderButton.setText(hasFolder ? "📂" : "📁");
+            folderButton.setTextColor(hasFolder ? Color.WHITE : DARK_BLUE);
+            folderButton.setBackgroundTintList(ColorStateList.valueOf(
+                    hasFolder ? PRIMARY_BLUE : Color.WHITE
+            ));
+            folderButton.setStrokeColor(ColorStateList.valueOf(
+                    hasFolder ? PRIMARY_BLUE : BORDER_BLUE
+            ));
+        };
+
+        updateFolderButtonState.run();
+
+        folderButton.setOnClickListener(v -> {
+            PopupMenu popup = new PopupMenu(requireContext(), folderButton);
+            List<String> folders = buildFolderAssignmentNames();
+
+            for (int i = 0; i < folders.size(); i++) {
+                String label = folders.get(i);
+                if (i == folderSpinner.getSelectedItemPosition()) {
+                    label = "✓ " + label;
+                }
+                popup.getMenu().add(0, i, i, label);
+            }
+
+            popup.setOnMenuItemClickListener(item -> {
+                int selectedIndex = item.getItemId();
+                if (selectedIndex >= 0 && selectedIndex < folders.size()) {
+                    folderSpinner.setSelection(selectedIndex);
+                    updateFolderButtonState.run();
+
+                    if (selectedIndex <= 0) {
+                        Toast.makeText(requireContext(), "No folder selected", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(requireContext(),
+                                folders.get(selectedIndex).replace("📁 ", "") + " selected",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                }
+                return true;
+            });
+
+            popup.show();
+        });
+
+        return folderButton;
+    }
+
+    private LinearLayout createFolderModulePickerRow(Spinner folderSpinner, Spinner moduleSpinner) {
+        LinearLayout row = new LinearLayout(requireContext());
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(0, dp(8), 0, dp(4));
+        row.setBackgroundColor(SCREEN_BG);
+
+        MaterialButton folderButton = createFolderIconDropdownButton(folderSpinner);
+
+        LinearLayout.LayoutParams folderParams = new LinearLayout.LayoutParams(dp(48), dp(38));
+        folderParams.setMargins(0, 0, dp(12), 0);
+
+        LinearLayout.LayoutParams moduleParams = new LinearLayout.LayoutParams(0, dp(38), 1);
+
+        row.addView(folderButton, folderParams);
+        row.addView(moduleSpinner, moduleParams);
+
+        return row;
     }
     private void showRenameNoteDialog(NoteListItem item) {
         EditText titleInput = new EditText(requireContext());
@@ -570,6 +944,79 @@ public class NotesFragment extends Fragment {
                 .setNegativeButton("Cancel", null)
                 .show();
     }
+
+    private void showMoveToFolderDialog(NoteListItem item) {
+        if (item == null) return;
+
+        if (currentFolders.isEmpty()) {
+            new MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("No folders yet")
+                    .setMessage("Create a folder first, then you can move notes into it.")
+                    .setPositiveButton("Create folder", (dialog, which) -> showCreateFolderDialog())
+                    .setNegativeButton("Cancel", null)
+                    .show();
+            return;
+        }
+
+        LinearLayout layout = new LinearLayout(requireContext());
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(dp(40), dp(20), dp(40), 0);
+
+        TextView label = new TextView(requireContext());
+        label.setText("Choose where to move this note/file:");
+        label.setTextSize(14);
+        label.setTextColor(DARK_BLUE);
+        label.setPadding(0, 0, 0, dp(10));
+
+        Spinner folderSpinner = createFolderAssignmentSpinner();
+        folderSpinner.setSelection(getFolderSpinnerPosition(item.getFolderId()), false);
+
+        layout.addView(label);
+        layout.addView(folderSpinner);
+
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Move to folder")
+                .setView(layout)
+                .setPositiveButton("Move", (dialog, which) -> {
+                    String folderId = getSelectedFolderIdFromSpinner(folderSpinner);
+                    viewModel.moveNoteToFolder(item, folderId);
+
+                    if (folderId == null) {
+                        Toast.makeText(requireContext(), "Removed from folder", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(requireContext(), "Moved to folder", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+    private void showCreateFolderDialog() {
+        EditText folderInput = new EditText(requireContext());
+        folderInput.setSingleLine(true);
+        folderInput.setHint("Folder name");
+        folderInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+
+        int padding = dp(20);
+        folderInput.setPadding(padding, padding / 2, padding, padding / 2);
+
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Create folder")
+                .setMessage("Create a folder to organise your personal notes and uploaded module files.")
+                .setView(folderInput)
+                .setPositiveButton("Create", (dialog, which) -> {
+                    String folderName = folderInput.getText().toString().trim();
+
+                    if (folderName.isEmpty()) {
+                        Toast.makeText(requireContext(), "Folder name cannot be empty", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    viewModel.addFolder(folderName);
+                    Toast.makeText(requireContext(), "Folder created", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
     private void showDeleteNoteDialog(NoteListItem item) {
         String type = item.getType() == NoteListItem.TYPE_MODULE_FILE ? "module file" : "personal note";
         new MaterialAlertDialogBuilder(requireContext())
@@ -584,27 +1031,149 @@ public class NotesFragment extends Fragment {
     }
     private void showAddMenu(View anchor) {
         PopupMenu menu = new PopupMenu(requireContext(), anchor);
+
         menu.getMenu().add("Upload module file");
         menu.getMenu().add("Write personal note");
+        menu.getMenu().add("Create folder");
+        menu.getMenu().add("Manage folders");
+
         menu.setOnMenuItemClickListener(item -> {
             String title = item.getTitle().toString();
-            if (title.equals("Upload module file")) showUploadDialog();
-            else showPersonalNoteDialog();
+
+            if (title.equals("Upload module file")) {
+                showUploadDialog();
+            } else if (title.equals("Write personal note")) {
+                showPersonalNoteDialog();
+            } else if (title.equals("Create folder")) {
+                showCreateFolderDialog();
+            } else if (title.equals("Manage folders")) {
+                showManageFoldersDialog();
+            }
+
             return true;
         });
+
         menu.show();
+    }
+    private void showManageFoldersDialog() {
+        if (currentFolders == null || currentFolders.isEmpty()) {
+            new MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("No folders")
+                    .setMessage("You have not created any folders yet.")
+                    .setPositiveButton("OK", null)
+                    .show();
+            return;
+        }
+
+        List<String> folderNames = new ArrayList<>();
+
+        for (NoteFolder folder : currentFolders) {
+            String name = folder.getName() == null || folder.getName().trim().isEmpty()
+                    ? "Untitled folder"
+                    : folder.getName();
+
+            folderNames.add("📁 " + name);
+        }
+
+        String[] folderArray = folderNames.toArray(new String[0]);
+
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Manage folders")
+                .setItems(folderArray, (dialog, which) -> {
+                    if (which >= 0 && which < currentFolders.size()) {
+                        showFolderActionsDialog(currentFolders.get(which));
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+    private void showFolderActionsDialog(NoteFolder folder) {
+        if (folder == null) return;
+
+        String folderName = folder.getName() == null || folder.getName().trim().isEmpty()
+                ? "Untitled folder"
+                : folder.getName();
+
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(folderName)
+                .setItems(new String[]{"Rename folder", "Delete folder"}, (dialog, which) -> {
+                    if (which == 0) {
+                        showRenameFolderDialog(folder);
+                    } else if (which == 1) {
+                        showConfirmDeleteFolderDialog(folder);
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+    private void showRenameFolderDialog(NoteFolder folder) {
+        if (folder == null) return;
+
+        EditText folderInput = new EditText(requireContext());
+        folderInput.setSingleLine(true);
+        folderInput.setHint("Folder name");
+        folderInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+
+        String currentName = folder.getName() == null ? "" : folder.getName();
+        folderInput.setText(currentName);
+        folderInput.setSelection(folderInput.getText().length());
+
+        int padding = dp(20);
+        folderInput.setPadding(padding, padding / 2, padding, padding / 2);
+
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Rename folder")
+                .setMessage("Enter a new name for this folder.")
+                .setView(folderInput)
+                .setPositiveButton("Save", (dialog, which) -> {
+                    String newName = folderInput.getText().toString().trim();
+
+                    if (newName.isEmpty()) {
+                        Toast.makeText(requireContext(), "Folder name cannot be empty", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    viewModel.renameFolder(folder, newName);
+                    Toast.makeText(requireContext(), "Folder renamed", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+    private void showConfirmDeleteFolderDialog(NoteFolder folder) {
+        if (folder == null) return;
+
+        String folderName = folder.getName() == null || folder.getName().trim().isEmpty()
+                ? "Untitled folder"
+                : folder.getName();
+
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Delete folder?")
+                .setMessage("This will delete the folder \"" + folderName + "\". Notes inside it will not be deleted; they will just be removed from the folder.")
+                .setPositiveButton("Delete", (dialog, which) -> {
+                    viewModel.deleteFolder(folder);
+                    Toast.makeText(requireContext(), "Folder deleted", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
     private void showUploadDialog() {
         if (currentModules.isEmpty()) {
             Toast.makeText(requireContext(), "Create a module first before uploading notes.", Toast.LENGTH_LONG).show();
             return;
         }
+
         LinearLayout layout = new LinearLayout(requireContext());
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.setPadding(dp(40), dp(20), dp(40), 0);
+
         EditText titleInput = new EditText(requireContext());
         titleInput.setHint("Note title e.g. Week 3 Slides");
+        titleInput.setSingleLine(true);
+        titleInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+
         Spinner moduleSpinner = new Spinner(requireContext());
+        styleModuleSpinner(moduleSpinner);
+
         List<String> moduleNames = new ArrayList<>();
         for (Module module : currentModules) {
             String label = module.getModuleCode() != null && !module.getModuleCode().isEmpty()
@@ -612,22 +1181,47 @@ public class NotesFragment extends Fragment {
                     : module.getName();
             moduleNames.add(label);
         }
+
         moduleSpinner.setAdapter(createModuleSpinnerAdapter(moduleNames));
+
+        TextView moduleLabel = new TextView(requireContext());
+        moduleLabel.setText("Module");
+        moduleLabel.setTextSize(13);
+        moduleLabel.setTextColor(DARK_BLUE);
+        moduleLabel.setPadding(0, dp(12), 0, dp(4));
+
+        TextView folderLabel = new TextView(requireContext());
+        folderLabel.setText("Folder");
+        folderLabel.setTextSize(13);
+        folderLabel.setTextColor(DARK_BLUE);
+        folderLabel.setPadding(0, dp(12), 0, dp(4));
+
+        Spinner folderSpinner = createFolderAssignmentSpinner();
+
         layout.addView(titleInput);
+        layout.addView(moduleLabel);
         layout.addView(moduleSpinner);
+        layout.addView(folderLabel);
+        layout.addView(folderSpinner);
+
         new MaterialAlertDialogBuilder(requireContext())
                 .setTitle("Upload module note")
-                .setMessage("Choose the module and title first. Then select a PDF, PowerPoint, Word document or image.")
+                .setMessage("Choose the module, optional folder, and title first. Then select a PDF, PowerPoint, Word document or image.")
                 .setView(layout)
                 .setPositiveButton("Choose file", (dialog, which) -> {
                     String title = titleInput.getText().toString().trim();
+
                     if (title.isEmpty()) {
                         Toast.makeText(requireContext(), "Title is required", Toast.LENGTH_SHORT).show();
                         return;
                     }
+
                     int selectedIndex = moduleSpinner.getSelectedItemPosition();
+
                     pendingUploadTitle = title;
                     pendingUploadModuleId = currentModules.get(selectedIndex).getModuleId();
+                    pendingUploadFolderId = getSelectedFolderIdFromSpinner(folderSpinner);
+
                     try {
                         moduleFilePickerLauncher.launch(new String[]{
                                 "application/pdf",
@@ -640,6 +1234,7 @@ public class NotesFragment extends Fragment {
                     } catch (Exception e) {
                         pendingUploadTitle = null;
                         pendingUploadModuleId = null;
+                        pendingUploadFolderId = null;
                         safeToast("Could not open file picker. Please try again.", Toast.LENGTH_LONG);
                     }
                 })
@@ -665,7 +1260,8 @@ public class NotesFragment extends Fragment {
         Spinner moduleSpinner = new Spinner(requireContext());
         styleModuleSpinner(moduleSpinner);
         moduleSpinner.setAdapter(createModuleSpinnerAdapter(buildPersonalModuleNames()));
-        LinearLayout topBar = createTopBar(btnBack, topTitle, btnSave, null, moduleSpinner);
+        Spinner folderSpinner = createFolderAssignmentSpinner();
+        LinearLayout topBar = createTopBar(btnBack, topTitle, btnSave, null, null);
         LinearLayout editorLayout = new LinearLayout(requireContext());
         editorLayout.setOrientation(LinearLayout.VERTICAL);
         editorLayout.setPadding(dp(22), 0, dp(22), dp(0));
@@ -675,6 +1271,10 @@ public class NotesFragment extends Fragment {
         TextView attachmentStatus = makeAttachmentStatusText();
         final boolean[] observingDraftAttachments = {false};
         LinearLayout noteCard = createNoteCard(contentInput, null);
+
+        LinearLayout folderModuleRow = createFolderModulePickerRow(folderSpinner, moduleSpinner);
+        editorLayout.addView(folderModuleRow);
+
         editorLayout.addView(titleInput);
         LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -683,7 +1283,7 @@ public class NotesFragment extends Fragment {
         cardParams.setMargins(0, dp(14), 0, 0);
         editorLayout.addView(noteCard, cardParams);
         Runnable attachAction = () -> {
-            ensureDraftNoteExists(titleInput, contentInput, moduleSpinner, true);
+            ensureDraftNoteExists(titleInput, contentInput, moduleSpinner, folderSpinner, true);
             if (!observingDraftAttachments[0] && activeAttachmentNoteId != null) {
                 observeAttachmentCount(activeAttachmentNoteId, attachmentStatus);
                 observingDraftAttachments[0] = true;
@@ -697,18 +1297,22 @@ public class NotesFragment extends Fragment {
                 Toast.makeText(requireContext(), "Attach a file first", Toast.LENGTH_SHORT).show();
                 return;
             }
-            boolean saved = savePersonalNoteFromEditor(titleInput, contentInput, moduleSpinner);
+            boolean saved = savePersonalNoteFromEditor(titleInput, contentInput, moduleSpinner, folderSpinner);
             if (saved) {
                 String title = titleInput.getText().toString().trim();
                 String htmlContent = getCleanHtmlFromEditor(contentInput);
                 String moduleName = getSelectedPersonalModuleId(moduleSpinner) == null ? "Personal" : "Module";
+                String selectedFolderId = getSelectedFolderIdFromSpinner(folderSpinner);
+                String selectedModuleId = getSelectedPersonalModuleId(moduleSpinner);
                 NoteListItem viewItem = new NoteListItem(
                         NoteListItem.TYPE_PERSONAL_NOTE,
                         activeAttachmentNoteId,
                         title,
                         moduleName,
                         htmlContent,
-                        null
+                        null,
+                        selectedFolderId,
+                        selectedModuleId
                 );
                 noteSaved[0] = true;
                 activeAttachmentBelongsToUnsavedDraft = false;
@@ -739,18 +1343,18 @@ public class NotesFragment extends Fragment {
                 dialog.dismiss();
                 return;
             }
-            confirmSaveBeforeLeaving(dialog, titleInput, contentInput, moduleSpinner, noteSaved);
+            confirmSaveBeforeLeaving(dialog, titleInput, contentInput, moduleSpinner, folderSpinner, noteSaved);
         });
         dialog.setOnKeyListener((dialogInterface, keyCode, event) -> {
             if (keyCode == KeyEvent.KEYCODE_BACK && event.getAction() == KeyEvent.ACTION_UP) {
                 if (noteSaved[0]) dialog.dismiss();
-                else confirmSaveBeforeLeaving(dialog, titleInput, contentInput, moduleSpinner, noteSaved);
+                else confirmSaveBeforeLeaving(dialog, titleInput, contentInput, moduleSpinner, folderSpinner, noteSaved);
                 return true;
             }
             return false;
         });
         btnSave.setOnClickListener(v -> {
-            boolean saved = savePersonalNoteFromEditor(titleInput, contentInput, moduleSpinner);
+            boolean saved = savePersonalNoteFromEditor(titleInput, contentInput, moduleSpinner, folderSpinner);
             if (saved) {
                 noteSaved[0] = true;
                 activeAttachmentBelongsToUnsavedDraft = false;
@@ -813,6 +1417,21 @@ public class NotesFragment extends Fragment {
 
         return 0;
     }
+    private int getPersonalModuleSpinnerPositionById(@Nullable String moduleId) {
+        if (moduleId == null || moduleId.trim().isEmpty()) {
+            return 0;
+        }
+
+        for (int i = 0; i < currentModules.size(); i++) {
+            Module module = currentModules.get(i);
+            if (moduleId.equals(module.getModuleId())) {
+                return i + 1;
+            }
+        }
+
+        return 0;
+    }
+
     private TextView makeAttachmentStatusText() {
         TextView text = new TextView(requireContext());
         setAttachmentCountLabel(text, 0);
@@ -853,10 +1472,32 @@ public class NotesFragment extends Fragment {
         Spinner moduleSpinner = new Spinner(requireContext());
         styleModuleSpinner(moduleSpinner);
         moduleSpinner.setAdapter(createModuleSpinnerAdapter(buildPersonalModuleNames()));
-        moduleSpinner.setSelection(getPersonalModuleSpinnerPosition(item.getSubtitle()));
-        moduleSpinner.setVisibility(View.GONE);
+        moduleSpinner.setSelection(getPersonalModuleSpinnerPositionById(item.getModuleId()), false);
 
-        LinearLayout topBar = createTopBar(btnBack, topTitle, btnMode, btnSave, moduleSpinner);
+        Spinner folderSpinner = createFolderAssignmentSpinner();
+        folderSpinner.setSelection(getFolderSpinnerPosition(item.getFolderId()), false);
+
+        LinearLayout folderModuleRow = createFolderModulePickerRow(folderSpinner, moduleSpinner);
+        folderModuleRow.setVisibility(View.GONE);
+
+        final boolean[] folderSelectionTouched = {false};
+        final boolean[] folderSpinnerReady = {false};
+
+        folderSpinner.post(() -> folderSpinnerReady[0] = true);
+
+        folderSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (folderSpinnerReady[0]) {
+                    folderSelectionTouched[0] = true;
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
+
+        LinearLayout topBar = createTopBar(btnBack, topTitle, btnMode, btnSave, null);
         LinearLayout contentHolder = new LinearLayout(requireContext());
         contentHolder.setOrientation(LinearLayout.VERTICAL);
         contentHolder.setPadding(dp(22), dp(14), dp(22), dp(10));
@@ -893,6 +1534,7 @@ public class NotesFragment extends Fragment {
             launchPersonalAttachmentPicker();
         };
         LinearLayout attachmentRow = createAttachmentControlRow(attachmentHeader, attachAction);
+        contentHolder.addView(folderModuleRow);
         contentHolder.addView(titleView);
         contentHolder.addView(titleInput);
         LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(
@@ -925,7 +1567,11 @@ public class NotesFragment extends Fragment {
                     return;
                 }
                 String newHtml = getCleanHtmlFromEditor(contentInput);
-                viewModel.updatePersonalNote(item, newTitle, newHtml);
+                String selectedModuleId = getSelectedPersonalModuleId(moduleSpinner);
+                String selectedFolderId = getSelectedFolderIdFromSpinner(folderSpinner);
+                viewModel.updatePersonalNote(item, newTitle, newHtml, selectedModuleId, selectedFolderId);
+                folderSelectionTouched[0] = false;
+
                 savedTitle[0] = newTitle;
                 savedHtml[0] = newHtml;
                 topTitle.setText(newTitle);
@@ -934,7 +1580,7 @@ public class NotesFragment extends Fragment {
                 hasUnsavedChanges[0] = false;
                 isEditMode[0] = false;
                 attachmentList.setVisibility(View.VISIBLE);
-                switchToViewMode(btnMode, btnSave, titleView, viewCard, titleInput, editCard, formatScroll, moduleSpinner);
+                switchToViewMode(btnMode, btnSave, titleView, viewCard, titleInput, editCard, formatScroll, folderModuleRow);
                 Toast.makeText(requireContext(), "Saved and showing attachments", Toast.LENGTH_SHORT).show();
             }
         });
@@ -955,7 +1601,7 @@ public class NotesFragment extends Fragment {
                 btnMode.setTextColor(Color.WHITE);
                 btnSave.setVisibility(View.VISIBLE);
 
-                moduleSpinner.setVisibility(View.VISIBLE);
+                folderModuleRow.setVisibility(View.VISIBLE);
 
                 titleView.setVisibility(View.GONE);
                 viewCard.setVisibility(View.GONE);
@@ -972,12 +1618,12 @@ public class NotesFragment extends Fragment {
                         hasUnsavedChanges[0] = false;
                         isEditMode[0] = false;
                         attachmentList.setVisibility(View.VISIBLE);
-                        switchToViewMode(btnMode, btnSave, titleView, viewCard, titleInput, editCard, formatScroll, moduleSpinner);
+                        switchToViewMode(btnMode, btnSave, titleView, viewCard, titleInput, editCard, formatScroll, folderModuleRow);
                     });
                 } else {
                     isEditMode[0] = false;
                     attachmentList.setVisibility(View.VISIBLE);
-                    switchToViewMode(btnMode, btnSave, titleView, viewCard, titleInput, editCard, formatScroll, moduleSpinner);
+                    switchToViewMode(btnMode, btnSave, titleView, viewCard, titleInput, editCard, formatScroll, folderModuleRow);
                 }
             }
         });
@@ -988,7 +1634,11 @@ public class NotesFragment extends Fragment {
                 return;
             }
             String newHtml = getCleanHtmlFromEditor(contentInput);
-            viewModel.updatePersonalNote(item, newTitle, newHtml);
+            String selectedModuleId = getSelectedPersonalModuleId(moduleSpinner);
+            String selectedFolderId = getSelectedFolderIdFromSpinner(folderSpinner);
+            viewModel.updatePersonalNote(item, newTitle, newHtml, selectedModuleId, selectedFolderId);
+            folderSelectionTouched[0] = false;
+
             savedTitle[0] = newTitle;
             savedHtml[0] = newHtml;
             topTitle.setText(newTitle);
@@ -997,7 +1647,7 @@ public class NotesFragment extends Fragment {
             hasUnsavedChanges[0] = false;
             isEditMode[0] = false;
             attachmentList.setVisibility(View.VISIBLE);
-            switchToViewMode(btnMode, btnSave, titleView, viewCard, titleInput, editCard, formatScroll, moduleSpinner);
+            switchToViewMode(btnMode, btnSave, titleView, viewCard, titleInput, editCard, formatScroll, folderModuleRow);
             Toast.makeText(requireContext(), "Note saved", Toast.LENGTH_SHORT).show();
         });
         btnBack.setOnClickListener(v -> {
@@ -1029,14 +1679,14 @@ public class NotesFragment extends Fragment {
                                   EditText titleInput,
                                   LinearLayout editCard,
                                   HorizontalScrollView formatScroll,
-                                  @Nullable Spinner moduleSpinner) {
+                                  @Nullable LinearLayout folderModuleRow) {
         btnMode.setText("Edit");
         btnMode.setBackgroundTintList(ColorStateList.valueOf(Color.WHITE));
         btnMode.setTextColor(DARK_BLUE);
         btnSave.setVisibility(View.GONE);
 
-        if (moduleSpinner != null) {
-            moduleSpinner.setVisibility(View.GONE);
+        if (folderModuleRow != null) {
+            folderModuleRow.setVisibility(View.GONE);
         }
 
         titleView.setVisibility(View.VISIBLE);
@@ -1057,12 +1707,13 @@ public class NotesFragment extends Fragment {
                                           EditText titleInput,
                                           EditText contentInput,
                                           Spinner moduleSpinner,
+                                          Spinner folderSpinner,
                                           boolean[] noteSaved) {
         new MaterialAlertDialogBuilder(requireContext())
                 .setTitle("Save note?")
                 .setMessage("Do you want to save this note before leaving?")
                 .setPositiveButton("Save", (d, which) -> {
-                    boolean saved = savePersonalNoteFromEditor(titleInput, contentInput, moduleSpinner);
+                    boolean saved = savePersonalNoteFromEditor(titleInput, contentInput, moduleSpinner, folderSpinner);
                     if (saved) {
                         noteSaved[0] = true;
                         activeAttachmentBelongsToUnsavedDraft = false;
@@ -1079,36 +1730,55 @@ public class NotesFragment extends Fragment {
                 .setNeutralButton("Cancel", null)
                 .show();
     }
-    private boolean savePersonalNoteFromEditor(EditText titleInput, EditText contentInput, Spinner moduleSpinner) {
+    private boolean savePersonalNoteFromEditor(EditText titleInput,
+                                               EditText contentInput,
+                                               Spinner moduleSpinner,
+                                               Spinner folderSpinner) {
         String title = titleInput.getText().toString().trim();
+
         if (title.isEmpty()) {
             Toast.makeText(requireContext(), "Title is required", Toast.LENGTH_SHORT).show();
             return false;
         }
+
         String htmlContent = getCleanHtmlFromEditor(contentInput);
+
+        String moduleId = getSelectedPersonalModuleId(moduleSpinner);
+        String folderId = getSelectedFolderIdFromSpinner(folderSpinner);
+
         if (temporaryDraftItem != null) {
-            viewModel.updatePersonalNote(temporaryDraftItem, title, htmlContent);
+            viewModel.updatePersonalNote(temporaryDraftItem, title, htmlContent, moduleId, folderId);
             return true;
         }
-        String moduleId = getSelectedPersonalModuleId(moduleSpinner);
-        PersonalNote note = viewModel.addPersonalNote(title, htmlContent, moduleId);
+
+
+        PersonalNote note = viewModel.addPersonalNote(title, htmlContent, moduleId, folderId);
+
         temporaryDraftItem = makeTemporaryItem(note, htmlContent);
         activeAttachmentNoteId = note.getNoteId();
+
         return true;
     }
     private void ensureDraftNoteExists(EditText titleInput,
                                        EditText contentInput,
                                        Spinner moduleSpinner,
+                                       Spinner folderSpinner,
                                        boolean showMessage) {
         if (activeAttachmentNoteId != null && !activeAttachmentNoteId.trim().isEmpty()) return;
+
         String title = titleInput.getText().toString().trim();
         if (title.isEmpty()) title = "Untitled note";
+
         String htmlContent = getCleanHtmlFromEditor(contentInput);
         String moduleId = getSelectedPersonalModuleId(moduleSpinner);
-        PersonalNote note = viewModel.addPersonalNote(title, htmlContent, moduleId);
+        String folderId = getSelectedFolderIdFromSpinner(folderSpinner);
+
+        PersonalNote note = viewModel.addPersonalNote(title, htmlContent, moduleId, folderId);
+
         temporaryDraftItem = makeTemporaryItem(note, htmlContent);
         activeAttachmentNoteId = note.getNoteId();
         activeAttachmentBelongsToUnsavedDraft = true;
+
         if (showMessage) {
             Toast.makeText(requireContext(),
                     "Temporary note created so the attachment can upload. Discard will remove it.",
@@ -1125,7 +1795,9 @@ public class NotesFragment extends Fragment {
                 note.getTitle(),
                 moduleName,
                 contentPreview,
-                null
+                null,
+                note.getFolderId(),
+                note.getModuleId()
         );
     }
     private String getSelectedPersonalModuleId(Spinner moduleSpinner) {
@@ -1700,7 +2372,8 @@ public class NotesFragment extends Fragment {
                     pendingUploadTitle,
                     fileName,
                     fileType,
-                    fileSize
+                    fileSize,
+                    pendingUploadFolderId
             );
 
             String safeFileName = sanitizeFileName(fileName);
@@ -1737,6 +2410,7 @@ public class NotesFragment extends Fragment {
                         viewModel.markModuleNoteUploaded(finalNote, uri.toString());
                         pendingUploadTitle = null;
                         pendingUploadModuleId = null;
+                        pendingUploadFolderId = null;
 
                         safeToast("File uploaded", Toast.LENGTH_SHORT);
                     })
@@ -1746,6 +2420,7 @@ public class NotesFragment extends Fragment {
                         }
 
                         safelyDeleteStorageFile(finalRef);
+
 
                         String message = e.getMessage() == null
                                 ? "Upload failed. Please try again."
@@ -1760,6 +2435,7 @@ public class NotesFragment extends Fragment {
             }
 
             safelyDeleteStorageFile(ref);
+            pendingUploadFolderId = null;
 
             String message = e.getMessage() == null
                     ? "Could not start upload. Please try again."
@@ -1956,7 +2632,8 @@ public class NotesFragment extends Fragment {
                 fileName,
                 "Personal attachment",
                 fileName,
-                url
+                url,
+                null
         );
         openFileInsideApp(fileItem);
     }

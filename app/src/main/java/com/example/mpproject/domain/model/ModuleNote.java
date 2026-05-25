@@ -1,16 +1,19 @@
 package com.example.mpproject.domain.model;
 
-// [Domain] Plain Java — no Room or Firebase annotations. Represents a file uploaded to a module (PDF, image, etc.)
-// The actual file lives in Firebase Storage; only the URI is stored locally.
+// [Domain] Plain Java — no Room or Firebase annotations.
+// Represents a file uploaded to a module.
+// The actual file lives in Firebase Storage; only the URI/metadata is stored locally and in Firestore.
 public class ModuleNote {
+
     private String noteId;
     private String moduleId;
     private String userId;
+    private String folderId;      // nullable — module file does not have to belong to a folder
     private String title;
     private String fileName;
-    private String fileType;     // e.g. "application/pdf"
-    private String storageUri;   // Firebase Storage download URL
-    private String uploadStatus; // "pending", "uploading", "done", "failed"
+    private String fileType;      // e.g. "application/pdf"
+    private String storageUri;    // Firebase Storage download URL
+    private String uploadStatus;  // "pending", "UPLOADING", "DONE", "FAILED"
     private long fileSizeBytes;
     private long createdAt;
 
@@ -26,19 +29,71 @@ public class ModuleNote {
         this.createdAt = System.currentTimeMillis();
     }
 
-    public String getNoteId() { return noteId; }
-    public String getModuleId() { return moduleId; }
-    public String getUserId() { return userId; }
-    public String getTitle() { return title; }
-    public String getFileName() { return fileName; }
-    public String getFileType() { return fileType; }
-    public String getStorageUri() { return storageUri; }
-    public String getUploadStatus() { return uploadStatus; }
-    public long getFileSizeBytes() { return fileSizeBytes; }
-    public long getCreatedAt() { return createdAt; }
+    public String getNoteId() {
+        return noteId;
+    }
 
-    public void setTitle(String title) { this.title = title; }
-    public void setStorageUri(String storageUri) { this.storageUri = storageUri; }
-    public void setUploadStatus(String uploadStatus) { this.uploadStatus = uploadStatus; }
-    public void setFileSizeBytes(long fileSizeBytes) { this.fileSizeBytes = fileSizeBytes; }
+    public String getModuleId() {
+        return moduleId;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public String getFolderId() {
+        return folderId;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public String getFileType() {
+        return fileType;
+    }
+
+    public String getStorageUri() {
+        return storageUri;
+    }
+
+    public String getUploadStatus() {
+        return uploadStatus;
+    }
+
+    public long getFileSizeBytes() {
+        return fileSizeBytes;
+    }
+
+    public long getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setFolderId(String folderId) {
+        this.folderId = folderId;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public void setStorageUri(String storageUri) {
+        this.storageUri = storageUri;
+    }
+
+    public void setUploadStatus(String uploadStatus) {
+        this.uploadStatus = uploadStatus;
+    }
+
+    public void setFileSizeBytes(long fileSizeBytes) {
+        this.fileSizeBytes = fileSizeBytes;
+    }
+
+    public void setCreatedAt(long createdAt) {
+        this.createdAt = createdAt;
+    }
 }

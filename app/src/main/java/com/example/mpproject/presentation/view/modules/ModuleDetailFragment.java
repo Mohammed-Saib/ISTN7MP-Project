@@ -14,6 +14,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
+import com.example.mpproject.R;
 
 import com.example.mpproject.data.local.AppDatabase;
 import com.example.mpproject.data.repository.AssessmentRepositoryImpl;
@@ -68,6 +69,21 @@ public class ModuleDetailFragment extends Fragment {
             Navigation.findNavController(view).popBackStack();
             return;
         }
+
+        binding.btnViewModuleNotes.setOnClickListener(v -> {
+            Bundle args = new Bundle();
+            args.putString("moduleId", moduleId);
+
+            Navigation.findNavController(v)
+                    .navigate(R.id.action_moduleDetailFragment_to_notesFragment, args);
+
+            com.google.android.material.bottomnavigation.BottomNavigationView bottomNav =
+                    requireActivity().findViewById(R.id.bottom_navigation);
+
+            if (bottomNav != null && bottomNav.getMenu().findItem(R.id.notesFragment) != null) {
+                bottomNav.getMenu().findItem(R.id.notesFragment).setChecked(true);
+            }
+        });
 
         AppDatabase db = AppDatabase.getDatabase(requireContext());
         String uid = user.getUid();

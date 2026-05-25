@@ -17,7 +17,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-// [Data] Implements ModuleNoteRepository. Room is the source of truth; Firestore is synced in the background.
+// [Data] Implements ModuleNoteRepository.
+// Room is the source of truth; Firestore is synced in the background.
 public class ModuleNoteRepositoryImpl implements ModuleNoteRepository {
 
     private static final String TAG = "ModuleNoteRepository";
@@ -50,8 +51,9 @@ public class ModuleNoteRepositoryImpl implements ModuleNoteRepository {
     public void delete(ModuleNote note) {
         AppDatabase.databaseWriteExecutor.execute(() -> {
             moduleNoteDao.delete(toEntity(note));
+
             try {
-                // Module notes are nested under modules in Firestore
+                // Module notes are nested under modules in Firestore.
                 firestore.collection("users").document(note.getUserId())
                         .collection("modules").document(note.getModuleId())
                         .collection("module_notes").document(note.getNoteId())
@@ -88,6 +90,7 @@ public class ModuleNoteRepositoryImpl implements ModuleNoteRepository {
                 .addOnSuccessListener(modulesSnap -> {
                     for (com.google.firebase.firestore.DocumentSnapshot moduleDoc : modulesSnap.getDocuments()) {
                         String moduleId = moduleDoc.getId();
+
                         firestore.collection("users").document(userId)
                                 .collection("modules").document(moduleId)
                                 .collection("module_notes")
@@ -97,35 +100,51 @@ public class ModuleNoteRepositoryImpl implements ModuleNoteRepository {
                                             for (com.google.firebase.firestore.DocumentSnapshot doc : notesSnap.getDocuments()) {
                                                 try {
                                                     ModuleNoteEntity e = new ModuleNoteEntity();
+
                                                     e.setNoteId(doc.getId());
                                                     e.setModuleId(moduleId);
                                                     e.setUserId(doc.getString("userId") != null
                                                             ? doc.getString("userId") : userId);
+
+                                                    e.setFolderId(doc.getString("folderId"));
                                                     e.setTitle(doc.getString("title"));
                                                     e.setFileName(doc.getString("fileName"));
                                                     e.setFileType(doc.getString("fileType"));
+
                                                     Long size = doc.getLong("fileSizeBytes");
                                                     e.setFileSizeBytes(size != null ? size : 0L);
+
                                                     e.setStorageUri(doc.getString("storageUri"));
                                                     e.setUploadStatus(doc.getString("uploadStatus"));
+
                                                     Long createdAt = doc.getLong("createdAt");
                                                     e.setCreatedAt(createdAt != null ? createdAt : 0L);
+
                                                     moduleNoteDao.insert(e);
                                                 } catch (Exception ex) {
                                                     Log.e(TAG, "Error syncing module note from Firestore", ex);
                                                 }
                                             }
                                         }))
-                                .addOnFailureListener(e -> Log.e(TAG, "Firestore module_notes sync failed for module " + moduleId, e));
+                                .addOnFailureListener(e -> Log.e(
+                                        TAG,
+                                        "Firestore module_notes sync failed for module " + moduleId,
+                                        e
+                                ));
                     }
                 })
-                .addOnFailureListener(e -> Log.e(TAG, "Firestore modules fetch failed during module note sync", e));
+                .addOnFailureListener(e -> Log.e(
+                        TAG,
+                        "Firestore modules fetch failed during module note sync",
+                        e
+                ));
     }
 
     // Sync metadata to users/{userId}/modules/{moduleId}/module_notes/{noteId}
     private void syncToFirestore(ModuleNote note) {
         try {
             Map<String, Object> data = new HashMap<>();
+
             data.put("title", note.getTitle());
             data.put("fileName", note.getFileName());
             data.put("fileType", note.getFileType());
@@ -134,6 +153,7 @@ public class ModuleNoteRepositoryImpl implements ModuleNoteRepository {
             data.put("uploadStatus", note.getUploadStatus());
             data.put("createdAt", note.getCreatedAt());
             data.put("userId", note.getUserId());
+            data.put("folderId", note.getFolderId());
 
             firestore.collection("users").document(note.getUserId())
                     .collection("modules").document(note.getModuleId())
@@ -147,27 +167,44 @@ public class ModuleNoteRepositoryImpl implements ModuleNoteRepository {
 
     private ModuleNote toDomain(ModuleNoteEntity e) {
         if (e == null) return null;
-        ModuleNote note = new ModuleNote(e.getNoteId(), e.getModuleId(), e.getUserId(),
-                e.getTitle(), e.getFileName(), e.getFileType());
+
+        ModuleNote note = new ModuleNote(
+                e.getNoteId(),
+                e.getModuleId(),
+                e.getUserId(),
+                e.getTitle(),
+                e.getFileName(),
+                e.getFileType()
+        );
+
+        note.setFolderId(e.getFolderId());
         note.setFileSizeBytes(e.getFileSizeBytes());
         note.setStorageUri(e.getStorageUri());
         note.setUploadStatus(e.getUploadStatus());
+        note.setCreatedAt(e.getCreatedAt());
+
         return note;
     }
 
     private List<ModuleNote> toDomainList(List<ModuleNoteEntity> entities) {
         List<ModuleNote> list = new ArrayList<>();
+
         if (entities != null) {
-            for (ModuleNoteEntity e : entities) list.add(toDomain(e));
+            for (ModuleNoteEntity e : entities) {
+                list.add(toDomain(e));
+            }
         }
+
         return list;
     }
 
     private ModuleNoteEntity toEntity(ModuleNote note) {
         ModuleNoteEntity e = new ModuleNoteEntity();
+
         e.setNoteId(note.getNoteId());
         e.setModuleId(note.getModuleId());
         e.setUserId(note.getUserId());
+        e.setFolderId(note.getFolderId());
         e.setTitle(note.getTitle());
         e.setFileName(note.getFileName());
         e.setFileType(note.getFileType());
@@ -175,6 +212,7 @@ public class ModuleNoteRepositoryImpl implements ModuleNoteRepository {
         e.setStorageUri(note.getStorageUri());
         e.setUploadStatus(note.getUploadStatus());
         e.setCreatedAt(note.getCreatedAt());
+
         return e;
     }
 }

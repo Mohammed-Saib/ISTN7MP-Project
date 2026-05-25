@@ -21,7 +21,6 @@
             app:navigationIcon="@drawable/ic_chevron_left"
             app:navigationContentDescription="Back" />
 
-        <!-- Module header card (colour strip + name) -->
         <LinearLayout
             android:id="@+id/ll_module_header"
             android:layout_width="match_parent"
@@ -35,8 +34,8 @@
                 android:id="@+id/view_color_strip"
                 android:layout_width="6dp"
                 android:layout_height="44dp"
-                android:background="@drawable/bg_rounded_surface"
-                android:layout_marginEnd="12dp" />
+                android:layout_marginEnd="12dp"
+                android:background="@drawable/bg_rounded_surface" />
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -67,19 +66,18 @@
                 style="@style/Widget.Material3.Button.IconButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                app:icon="@drawable/ic_settings"
-                android:contentDescription="Edit module" />
+                android:contentDescription="Edit module"
+                app:icon="@drawable/ic_settings" />
 
         </LinearLayout>
 
-        <!-- Assessment search field -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/til_search"
             style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="16dp"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="10dp"
             android:hint="Search assessments…"
             app:endIconMode="clear_text"
             app:startIconDrawable="@drawable/ic_search">
@@ -88,11 +86,23 @@
                 android:id="@+id/et_search_assessment"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:imeOptions="actionSearch"
                 android:inputType="text"
-                android:maxLines="1"
-                android:imeOptions="actionSearch" />
+                android:maxLines="1" />
 
         </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_view_module_notes"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginBottom="12dp"
+            android:text="View Notes for this Module"
+            android:textAllCaps="false"
+            android:textStyle="bold"
+            app:cornerRadius="14dp" />
 
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -100,9 +110,9 @@
         android:id="@+id/rv_assessments"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:clipToPadding="false"
         android:paddingTop="8dp"
         android:paddingBottom="88dp"
-        android:clipToPadding="false"
         app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton

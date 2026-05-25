@@ -13,15 +13,18 @@
         android:name="com.example.mpproject.presentation.view.auth.LoginFragment"
         android:label="Login"
         tools:layout="@layout/fragment_login">
+
         <action
             android:id="@+id/action_loginFragment_to_registerFragment"
             app:destination="@id/registerFragment" />
+
         <!-- Pop auth stack so Back doesn't return to login after sign-in -->
         <action
             android:id="@+id/action_loginFragment_to_homeFragment"
             app:destination="@id/homeFragment"
             app:popUpTo="@id/loginFragment"
             app:popUpToInclusive="true" />
+
     </fragment>
 
     <fragment
@@ -29,14 +32,17 @@
         android:name="com.example.mpproject.presentation.view.auth.RegisterFragment"
         android:label="Register"
         tools:layout="@layout/fragment_register">
+
         <action
             android:id="@+id/action_registerFragment_to_loginFragment"
             app:destination="@id/loginFragment" />
+
         <action
             android:id="@+id/action_registerFragment_to_homeFragment"
             app:destination="@id/homeFragment"
             app:popUpTo="@id/loginFragment"
             app:popUpToInclusive="true" />
+
     </fragment>
 
     <!-- ── Main 5 tabs (IDs match bottom_nav_menu item IDs for NavigationUI) ── -->
@@ -46,10 +52,12 @@
         android:name="com.example.mpproject.presentation.view.HomeFragment"
         android:label="Home"
         tools:layout="@layout/fragment_home">
+
         <!-- Opens settings overlay (not a tab) -->
         <action
             android:id="@+id/action_homeFragment_to_settingsFragment"
             app:destination="@id/settingsFragment" />
+
     </fragment>
 
     <fragment
@@ -57,12 +65,15 @@
         android:name="com.example.mpproject.presentation.view.ModulesFragment"
         android:label="Modules"
         tools:layout="@layout/fragment_modules">
+
         <action
             android:id="@+id/action_modulesFragment_to_settingsFragment"
             app:destination="@id/settingsFragment" />
+
         <action
             android:id="@+id/action_modulesFragment_to_moduleDetailFragment"
             app:destination="@id/moduleDetailFragment" />
+
     </fragment>
 
     <fragment
@@ -70,9 +81,16 @@
         android:name="com.example.mpproject.presentation.view.modules.ModuleDetailFragment"
         android:label="Module Detail"
         tools:layout="@layout/fragment_module_detail">
+
         <argument
             android:name="moduleId"
             app:argType="string" />
+
+        <!-- Opens NotesFragment filtered to this specific module -->
+        <action
+            android:id="@+id/action_moduleDetailFragment_to_notesFragment"
+            app:destination="@id/notesFragment" />
+
     </fragment>
 
     <fragment
@@ -80,9 +98,17 @@
         android:name="com.example.mpproject.presentation.view.NotesFragment"
         android:label="Notes"
         tools:layout="@layout/fragment_notes">
+
+        <!-- Optional argument used when opening notes from a specific module -->
+        <argument
+            android:name="moduleId"
+            app:argType="string"
+            app:nullable="true" />
+
         <action
             android:id="@+id/action_notesFragment_to_settingsFragment"
             app:destination="@id/settingsFragment" />
+
     </fragment>
 
     <fragment
@@ -90,9 +116,11 @@
         android:name="com.example.mpproject.presentation.view.TasksFragment"
         android:label="To-Do"
         tools:layout="@layout/fragment_tasks">
+
         <action
             android:id="@+id/action_tasksFragment_to_settingsFragment"
             app:destination="@id/settingsFragment" />
+
     </fragment>
 
     <fragment
@@ -100,9 +128,11 @@
         android:name="com.example.mpproject.presentation.view.CalendarFragment"
         android:label="Calendar"
         tools:layout="@layout/fragment_calendar">
+
         <action
             android:id="@+id/action_calendarFragment_to_settingsFragment"
             app:destination="@id/settingsFragment" />
+
     </fragment>
 
     <!-- ── Non-tab screens ── -->
@@ -112,12 +142,14 @@
         android:name="com.example.mpproject.presentation.view.SettingsFragment"
         android:label="Settings"
         tools:layout="@layout/fragment_settings">
+
         <!-- After logout, pop everything and land on loginFragment -->
         <action
             android:id="@+id/action_settingsFragment_to_loginFragment"
             app:destination="@id/loginFragment"
             app:popUpTo="@id/nav_graph"
             app:popUpToInclusive="true" />
+
     </fragment>
 
 </navigation>

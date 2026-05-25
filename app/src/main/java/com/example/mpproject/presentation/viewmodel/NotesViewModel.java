@@ -1,4 +1,3 @@
-
 package com.example.mpproject.presentation.viewmodel;
 
 import android.text.Html;
@@ -9,10 +8,12 @@ import androidx.lifecycle.ViewModel;
 
 import com.example.mpproject.domain.model.Module;
 import com.example.mpproject.domain.model.ModuleNote;
+import com.example.mpproject.domain.model.NoteFolder;
 import com.example.mpproject.domain.model.PersonalNote;
 import com.example.mpproject.domain.model.PersonalNoteAttachment;
 import com.example.mpproject.domain.repository.ModuleNoteRepository;
 import com.example.mpproject.domain.repository.ModuleRepository;
+import com.example.mpproject.domain.repository.NoteFolderRepository;
 import com.example.mpproject.domain.repository.PersonalNoteAttachmentRepository;
 import com.example.mpproject.domain.repository.PersonalNoteRepository;
 import com.example.mpproject.presentation.model.NoteListItem;
@@ -32,41 +33,48 @@ public class NotesViewModel extends ViewModel {
     private final ModuleNoteRepository moduleNoteRepository;
     private final PersonalNoteRepository personalNoteRepository;
     private final PersonalNoteAttachmentRepository personalNoteAttachmentRepository;
+    private final NoteFolderRepository noteFolderRepository;
 
     private final LiveData<List<Module>> modules;
     private final LiveData<List<ModuleNote>> moduleNotes;
     private final LiveData<List<PersonalNote>> personalNotes;
+    private final LiveData<List<NoteFolder>> folders;
 
     private final MediatorLiveData<List<NoteListItem>> displayNotes = new MediatorLiveData<>();
 
     private String searchQuery = "";
     private String selectedModuleId = null;
+    private String selectedFolderId = null;
     private int currentFilter = FILTER_ALL;
 
     private List<Module> latestModules = new ArrayList<>();
     private List<ModuleNote> latestModuleNotes = new ArrayList<>();
     private List<PersonalNote> latestPersonalNotes = new ArrayList<>();
+    private List<NoteFolder> latestFolders = new ArrayList<>();
 
     public NotesViewModel(
             String userId,
             ModuleRepository moduleRepository,
             ModuleNoteRepository moduleNoteRepository,
             PersonalNoteRepository personalNoteRepository,
-            PersonalNoteAttachmentRepository personalNoteAttachmentRepository
+            PersonalNoteAttachmentRepository personalNoteAttachmentRepository,
+            NoteFolderRepository noteFolderRepository
     ) {
         this.userId = userId;
         this.moduleRepository = moduleRepository;
         this.moduleNoteRepository = moduleNoteRepository;
         this.personalNoteRepository = personalNoteRepository;
         this.personalNoteAttachmentRepository = personalNoteAttachmentRepository;
+        this.noteFolderRepository = noteFolderRepository;
 
-        // Pull cloud data into Room cache so notes appear across devices.
         personalNoteRepository.syncFromFirestore(userId);
         personalNoteAttachmentRepository.syncFromFirestore(userId);
+        noteFolderRepository.syncFromFirestore(userId);
 
         modules = moduleRepository.getActiveByUser(userId);
         moduleNotes = moduleNoteRepository.getAllByUser(userId);
         personalNotes = personalNoteRepository.getAllByUser(userId);
+        folders = noteFolderRepository.getAllByUser(userId);
 
         displayNotes.addSource(modules, list -> {
             latestModules = list != null ? list : new ArrayList<>();
@@ -82,6 +90,11 @@ public class NotesViewModel extends ViewModel {
             latestPersonalNotes = list != null ? list : new ArrayList<>();
             rebuildList();
         });
+
+        displayNotes.addSource(folders, list -> {
+            latestFolders = list != null ? list : new ArrayList<>();
+            rebuildList();
+        });
     }
 
     public LiveData<List<NoteListItem>> getDisplayNotes() {
@@ -90,6 +103,10 @@ public class NotesViewModel extends ViewModel {
 
     public LiveData<List<Module>> getModules() {
         return modules;
+    }
+
+    public LiveData<List<NoteFolder>> getFolders() {
+        return folders;
     }
 
     public LiveData<List<PersonalNoteAttachment>> getAttachmentsForNote(String noteId) {
@@ -107,13 +124,158 @@ public class NotesViewModel extends ViewModel {
     }
 
     public void setSelectedModuleId(String moduleId) {
-        selectedModuleId = (moduleId == null || moduleId.trim().isEmpty()) ? null : moduleId;
+        selectedModuleId = normalizeNullableId(moduleId);
         rebuildList();
     }
 
-    public ModuleNote createUploadingModuleNote(String moduleId, String title,
-                                                String fileName, String fileType,
+    public void setSelectedFolderId(String folderId) {
+        selectedFolderId = normalizeNullableId(folderId);
+        rebuildList();
+    }
+
+    public String getSelectedModuleIdValue() {
+        return selectedModuleId;
+    }
+
+    public String getSelectedFolderIdValue() {
+        return selectedFolderId;
+    }
+
+    public NoteFolder addFolder(String folderName) {
+        if (folderName == null || folderName.trim().isEmpty()) return null;
+
+        long now = System.currentTimeMillis();
+
+        NoteFolder folder = new NoteFolder(
+                UUID.randomUUID().toString(),
+                userId,
+                folderName.trim()
+        );
+
+        folder.setCreatedAt(now);
+        folder.setUpdatedAt(now);
+
+        noteFolderRepository.insert(folder);
+
+        latestFolders.add(folder);
+        rebuildList();
+
+        return folder;
+    }
+
+    public void renameFolder(NoteFolder folder, String newName) {
+        if (folder == null || newName == null || newName.trim().isEmpty()) return;
+
+        folder.setName(newName.trim());
+        folder.setUpdatedAt(System.currentTimeMillis());
+
+        noteFolderRepository.update(folder);
+
+        for (int i = 0; i < latestFolders.size(); i++) {
+            NoteFolder existing = latestFolders.get(i);
+            if (existing.getFolderId() != null && existing.getFolderId().equals(folder.getFolderId())) {
+                latestFolders.set(i, folder);
+                break;
+            }
+        }
+
+        rebuildList();
+    }
+
+    public void deleteFolder(NoteFolder folder) {
+        if (folder == null) return;
+
+        String folderId = folder.getFolderId();
+        if (folderId == null || folderId.trim().isEmpty()) return;
+
+        for (PersonalNote note : latestPersonalNotes) {
+            if (folderId.equals(note.getFolderId())) {
+                note.setFolderId(null);
+                note.setUpdatedAt(System.currentTimeMillis());
+                personalNoteRepository.update(note);
+            }
+        }
+
+        for (ModuleNote note : latestModuleNotes) {
+            if (folderId.equals(note.getFolderId())) {
+                note.setFolderId(null);
+                moduleNoteRepository.update(note);
+            }
+        }
+
+        if (folderId.equals(selectedFolderId)) {
+            selectedFolderId = null;
+        }
+
+        noteFolderRepository.delete(folder);
+
+        List<NoteFolder> updatedFolders = new ArrayList<>();
+        for (NoteFolder existing : latestFolders) {
+            if (existing.getFolderId() == null || !existing.getFolderId().equals(folderId)) {
+                updatedFolders.add(existing);
+            }
+        }
+        latestFolders = updatedFolders;
+
+        rebuildList();
+    }
+
+    public void moveNoteToFolder(NoteListItem item, String folderIdOrNull) {
+        if (item == null) return;
+
+        String cleanFolderId = normalizeNullableId(folderIdOrNull);
+
+        if (item.getType() == NoteListItem.TYPE_PERSONAL_NOTE) {
+            PersonalNote note = findPersonalNote(item.getId());
+            if (note == null) return;
+
+            note.setFolderId(cleanFolderId);
+            note.setUpdatedAt(System.currentTimeMillis());
+
+            personalNoteRepository.update(note);
+
+            for (int i = 0; i < latestPersonalNotes.size(); i++) {
+                PersonalNote existing = latestPersonalNotes.get(i);
+                if (existing.getNoteId() != null && existing.getNoteId().equals(note.getNoteId())) {
+                    latestPersonalNotes.set(i, note);
+                    break;
+                }
+            }
+
+        } else {
+            ModuleNote note = findModuleNote(item.getId());
+            if (note == null) return;
+
+            note.setFolderId(cleanFolderId);
+
+            moduleNoteRepository.update(note);
+
+            for (int i = 0; i < latestModuleNotes.size(); i++) {
+                ModuleNote existing = latestModuleNotes.get(i);
+                if (existing.getNoteId() != null && existing.getNoteId().equals(note.getNoteId())) {
+                    latestModuleNotes.set(i, note);
+                    break;
+                }
+            }
+        }
+
+        rebuildList();
+    }
+
+    public ModuleNote createUploadingModuleNote(String moduleId,
+                                                String title,
+                                                String fileName,
+                                                String fileType,
                                                 long fileSizeBytes) {
+        return createUploadingModuleNote(moduleId, title, fileName, fileType, fileSizeBytes, null);
+    }
+
+    public ModuleNote createUploadingModuleNote(String moduleId,
+                                                String title,
+                                                String fileName,
+                                                String fileType,
+                                                long fileSizeBytes,
+                                                String folderIdOrNull) {
         ModuleNote note = new ModuleNote(
                 UUID.randomUUID().toString(),
                 moduleId,
@@ -125,23 +287,61 @@ public class NotesViewModel extends ViewModel {
 
         note.setFileSizeBytes(fileSizeBytes);
         note.setUploadStatus("UPLOADING");
+        note.setFolderId(normalizeNullableId(folderIdOrNull));
 
         moduleNoteRepository.insert(note);
+
+        latestModuleNotes.add(note);
+        rebuildList();
+
         return note;
     }
 
     public void markModuleNoteUploaded(ModuleNote note, String downloadUrl) {
+        if (note == null) return;
+
         note.setStorageUri(downloadUrl);
         note.setUploadStatus("DONE");
+
         moduleNoteRepository.update(note);
+
+        for (int i = 0; i < latestModuleNotes.size(); i++) {
+            ModuleNote existing = latestModuleNotes.get(i);
+            if (existing.getNoteId() != null && existing.getNoteId().equals(note.getNoteId())) {
+                latestModuleNotes.set(i, note);
+                break;
+            }
+        }
+
+        rebuildList();
     }
 
     public void markModuleNoteFailed(ModuleNote note) {
+        if (note == null) return;
+
         note.setUploadStatus("FAILED");
+
         moduleNoteRepository.update(note);
+
+        for (int i = 0; i < latestModuleNotes.size(); i++) {
+            ModuleNote existing = latestModuleNotes.get(i);
+            if (existing.getNoteId() != null && existing.getNoteId().equals(note.getNoteId())) {
+                latestModuleNotes.set(i, note);
+                break;
+            }
+        }
+
+        rebuildList();
     }
 
     public PersonalNote addPersonalNote(String title, String content, String moduleIdOrNull) {
+        return addPersonalNote(title, content, moduleIdOrNull, null);
+    }
+
+    public PersonalNote addPersonalNote(String title,
+                                        String content,
+                                        String moduleIdOrNull,
+                                        String folderIdOrNull) {
         long now = System.currentTimeMillis();
 
         PersonalNote note = new PersonalNote(
@@ -151,7 +351,8 @@ public class NotesViewModel extends ViewModel {
         );
 
         note.setContent(content);
-        note.setModuleId(moduleIdOrNull);
+        note.setModuleId(normalizeNullableId(moduleIdOrNull));
+        note.setFolderId(normalizeNullableId(folderIdOrNull));
         note.setPinned(false);
         note.setShared(false);
         note.setShareCode(null);
@@ -160,22 +361,48 @@ public class NotesViewModel extends ViewModel {
 
         personalNoteRepository.insert(note);
 
+        latestPersonalNotes.add(note);
+        rebuildList();
+
         return note;
     }
 
     public void updatePersonalNote(NoteListItem item, String newTitle, String newHtmlContent) {
         if (item == null || item.getType() != NoteListItem.TYPE_PERSONAL_NOTE) return;
 
-        for (PersonalNote note : latestPersonalNotes) {
-            if (note.getNoteId().equals(item.getId())) {
-                note.setTitle(newTitle);
-                note.setContent(newHtmlContent);
-                note.setUpdatedAt(System.currentTimeMillis());
+        PersonalNote note = findPersonalNote(item.getId());
+        if (note == null) return;
 
-                personalNoteRepository.update(note);
-                return;
+        updatePersonalNote(item, newTitle, newHtmlContent, note.getModuleId(), note.getFolderId());
+    }
+
+    public void updatePersonalNote(NoteListItem item,
+                                   String newTitle,
+                                   String newHtmlContent,
+                                   String moduleIdOrNull,
+                                   String folderIdOrNull) {
+        if (item == null || item.getType() != NoteListItem.TYPE_PERSONAL_NOTE) return;
+
+        PersonalNote note = findPersonalNote(item.getId());
+        if (note == null) return;
+
+        note.setTitle(newTitle);
+        note.setContent(newHtmlContent);
+        note.setModuleId(normalizeNullableId(moduleIdOrNull));
+        note.setFolderId(normalizeNullableId(folderIdOrNull));
+        note.setUpdatedAt(System.currentTimeMillis());
+
+        personalNoteRepository.update(note);
+
+        for (int i = 0; i < latestPersonalNotes.size(); i++) {
+            PersonalNote existing = latestPersonalNotes.get(i);
+            if (existing.getNoteId() != null && existing.getNoteId().equals(note.getNoteId())) {
+                latestPersonalNotes.set(i, note);
+                break;
             }
         }
+
+        rebuildList();
     }
 
     public PersonalNoteAttachment createUploadingPersonalAttachment(
@@ -205,6 +432,8 @@ public class NotesViewModel extends ViewModel {
             String storagePath,
             String downloadUrl
     ) {
+        if (attachment == null) return;
+
         attachment.setStoragePath(storagePath);
         attachment.setDownloadUrl(downloadUrl);
         attachment.setUploadStatus("DONE");
@@ -213,11 +442,16 @@ public class NotesViewModel extends ViewModel {
     }
 
     public void markPersonalAttachmentFailed(PersonalNoteAttachment attachment) {
+        if (attachment == null) return;
+
         attachment.setUploadStatus("FAILED");
+
         personalNoteAttachmentRepository.update(attachment);
     }
 
     public void deletePersonalAttachment(PersonalNoteAttachment attachment) {
+        if (attachment == null) return;
+
         personalNoteAttachmentRepository.delete(attachment);
     }
 
@@ -230,14 +464,35 @@ public class NotesViewModel extends ViewModel {
 
             note.setTitle(newTitle.trim());
             note.setUpdatedAt(System.currentTimeMillis());
+
             personalNoteRepository.update(note);
+
+            for (int i = 0; i < latestPersonalNotes.size(); i++) {
+                PersonalNote existing = latestPersonalNotes.get(i);
+                if (existing.getNoteId() != null && existing.getNoteId().equals(note.getNoteId())) {
+                    latestPersonalNotes.set(i, note);
+                    break;
+                }
+            }
+
         } else {
             ModuleNote note = findModuleNote(item.getId());
             if (note == null) return;
 
             note.setTitle(newTitle.trim());
+
             moduleNoteRepository.update(note);
+
+            for (int i = 0; i < latestModuleNotes.size(); i++) {
+                ModuleNote existing = latestModuleNotes.get(i);
+                if (existing.getNoteId() != null && existing.getNoteId().equals(note.getNoteId())) {
+                    latestModuleNotes.set(i, note);
+                    break;
+                }
+            }
         }
+
+        rebuildList();
     }
 
     public void deleteNote(NoteListItem item) {
@@ -245,11 +500,34 @@ public class NotesViewModel extends ViewModel {
 
         if (item.getType() == NoteListItem.TYPE_PERSONAL_NOTE) {
             PersonalNote note = findPersonalNote(item.getId());
-            if (note != null) personalNoteRepository.delete(note);
+            if (note != null) {
+                personalNoteRepository.delete(note);
+
+                List<PersonalNote> updated = new ArrayList<>();
+                for (PersonalNote existing : latestPersonalNotes) {
+                    if (existing.getNoteId() == null || !existing.getNoteId().equals(note.getNoteId())) {
+                        updated.add(existing);
+                    }
+                }
+                latestPersonalNotes = updated;
+            }
+
         } else {
             ModuleNote note = findModuleNote(item.getId());
-            if (note != null) moduleNoteRepository.delete(note);
+            if (note != null) {
+                moduleNoteRepository.delete(note);
+
+                List<ModuleNote> updated = new ArrayList<>();
+                for (ModuleNote existing : latestModuleNotes) {
+                    if (existing.getNoteId() == null || !existing.getNoteId().equals(note.getNoteId())) {
+                        updated.add(existing);
+                    }
+                }
+                latestModuleNotes = updated;
+            }
         }
+
+        rebuildList();
     }
 
     private void rebuildList() {
@@ -258,29 +536,50 @@ public class NotesViewModel extends ViewModel {
         if (currentFilter == FILTER_ALL || currentFilter == FILTER_MODULE) {
             for (ModuleNote note : latestModuleNotes) {
                 if (!matchesSelectedModule(note.getModuleId())) continue;
+                if (!matchesSelectedFolder(note.getFolderId())) continue;
 
                 String moduleName = getModuleName(note.getModuleId());
+                String folderName = getFolderName(note.getFolderId());
+
+                String subtitle = moduleName + " • " + readableStatus(note.getUploadStatus());
+
+                if (folderName != null && !folderName.trim().isEmpty()) {
+                    subtitle = subtitle + " • 📁 " + folderName;
+                }
 
                 NoteListItem item = new NoteListItem(
                         NoteListItem.TYPE_MODULE_FILE,
                         note.getNoteId(),
                         note.getTitle(),
-                        moduleName + " • " + readableStatus(note.getUploadStatus()),
+                        subtitle,
                         note.getFileName(),
-                        note.getStorageUri()
+                        note.getStorageUri(),
+                        note.getFolderId(),
+                        note.getModuleId()
                 );
 
-                if (matchesSearch(item)) combined.add(item);
+                if (matchesSearch(item)) {
+                    combined.add(item);
+                }
             }
         }
 
         if (currentFilter == FILTER_ALL || currentFilter == FILTER_PERSONAL) {
             for (PersonalNote note : latestPersonalNotes) {
                 if (!matchesSelectedModule(note.getModuleId())) continue;
+                if (!matchesSelectedFolder(note.getFolderId())) continue;
 
                 String moduleName = note.getModuleId() == null || note.getModuleId().trim().isEmpty()
                         ? "Personal"
                         : getModuleName(note.getModuleId());
+
+                String folderName = getFolderName(note.getFolderId());
+
+                String subtitle = moduleName;
+
+                if (folderName != null && !folderName.trim().isEmpty()) {
+                    subtitle = subtitle + " • 📁 " + folderName;
+                }
 
                 String content = note.getContent() == null ? "" : note.getContent();
 
@@ -288,12 +587,16 @@ public class NotesViewModel extends ViewModel {
                         NoteListItem.TYPE_PERSONAL_NOTE,
                         note.getNoteId(),
                         note.getTitle(),
-                        moduleName,
+                        subtitle,
                         content,
-                        null
+                        null,
+                        note.getFolderId(),
+                        note.getModuleId()
                 );
 
-                if (matchesSearch(item)) combined.add(item);
+                if (matchesSearch(item)) {
+                    combined.add(item);
+                }
             }
         }
 
@@ -305,6 +608,11 @@ public class NotesViewModel extends ViewModel {
         return moduleId != null && moduleId.equals(selectedModuleId);
     }
 
+    private boolean matchesSelectedFolder(String folderId) {
+        if (selectedFolderId == null) return true;
+        return folderId != null && folderId.equals(selectedFolderId);
+    }
+
     private boolean matchesSearch(NoteListItem item) {
         if (searchQuery.isEmpty()) return true;
 
@@ -314,8 +622,10 @@ public class NotesViewModel extends ViewModel {
     }
 
     private PersonalNote findPersonalNote(String noteId) {
+        if (noteId == null) return null;
+
         for (PersonalNote note : latestPersonalNotes) {
-            if (note.getNoteId() != null && note.getNoteId().equals(noteId)) {
+            if (noteId.equals(note.getNoteId())) {
                 return note;
             }
         }
@@ -324,8 +634,10 @@ public class NotesViewModel extends ViewModel {
     }
 
     private ModuleNote findModuleNote(String noteId) {
+        if (noteId == null) return null;
+
         for (ModuleNote note : latestModuleNotes) {
-            if (note.getNoteId() != null && note.getNoteId().equals(noteId)) {
+            if (noteId.equals(note.getNoteId())) {
                 return note;
             }
         }
@@ -341,11 +653,24 @@ public class NotesViewModel extends ViewModel {
                 if (module.getModuleCode() != null && !module.getModuleCode().isEmpty()) {
                     return module.getModuleCode() + " - " + module.getName();
                 }
+
                 return module.getName();
             }
         }
 
         return "Module";
+    }
+
+    private String getFolderName(String folderId) {
+        if (folderId == null || folderId.trim().isEmpty()) return null;
+
+        for (NoteFolder folder : latestFolders) {
+            if (folder.getFolderId() != null && folder.getFolderId().equals(folderId)) {
+                return folder.getName();
+            }
+        }
+
+        return null;
     }
 
     private String readableStatus(String status) {
@@ -366,5 +691,9 @@ public class NotesViewModel extends ViewModel {
                 html,
                 Html.FROM_HTML_MODE_LEGACY
         ).toString();
+    }
+
+    private String normalizeNullableId(String value) {
+        return value == null || value.trim().isEmpty() ? null : value.trim();
     }
 }
