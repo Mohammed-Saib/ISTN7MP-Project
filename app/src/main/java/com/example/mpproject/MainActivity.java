@@ -18,6 +18,8 @@ import com.example.mpproject.data.repository.ModuleRepositoryImpl;
 import com.example.mpproject.data.repository.PersonalNoteRepositoryImpl;
 import com.example.mpproject.data.repository.TodoRepositoryImpl;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.example.mpproject.presentation.view.ChatBotBottomSheet;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
@@ -72,6 +74,10 @@ public class MainActivity extends AppCompatActivity {
         ReminderScheduler.scheduleMotivationTestReminder(this, 1);
 
         BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
+        FloatingActionButton fabChatbot = findViewById(R.id.fab_chatbot);
+
+        fabChatbot.setOnClickListener(v ->
+                new ChatBotBottomSheet().show(getSupportFragmentManager(), "chatbot"));
 
         NavHostFragment navHostFragment = (NavHostFragment)
                 getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment);
@@ -115,6 +121,7 @@ public class MainActivity extends AppCompatActivity {
                     || id == R.id.settingsFragment;
 
             bottomNav.setVisibility(hideNav ? View.GONE : View.VISIBLE);
+            fabChatbot.setVisibility(hideNav ? View.GONE : View.VISIBLE);
 
             int matchingBottomTabId = getMatchingBottomTabId(id);
 
