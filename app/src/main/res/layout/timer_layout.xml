@@ -132,7 +132,7 @@
         android:contentDescription="Tasks"
         android:padding="10dp"
         android:scaleType="fitCenter"
-        android:src="@drawable/ic_nav_todo" />
+        android:src="@drawable/ic_nav_todo_white" />
 
     <ImageButton
         android:id="@+id/btnSettings"

@@ -27,6 +27,7 @@ import com.example.mpproject.presentation.adapter.TodoPanelAdapter;
 import com.example.mpproject.presentation.model.PomodoroUiState;
 import com.example.mpproject.presentation.viewmodel.PomodoroViewModel;
 import com.example.mpproject.presentation.viewmodel.PomodoroViewModelFactory;
+import com.example.mpproject.presentation.viewmodel.SessionViewModel;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.textfield.TextInputEditText;
@@ -45,6 +46,8 @@ public class TimerFragment extends Fragment {
     private BottomSheetDialog taskPanel;
     private TodoDao todoDao;
     private String currentUserId;
+
+    private SessionViewModel sessionViewModel;
 
     @Nullable
     @Override
@@ -65,6 +68,10 @@ public class TimerFragment extends Fragment {
         viewModel = new ViewModelProvider(requireActivity(), factory)
                 .get(PomodoroViewModel.class);
 
+        // ── Shared session ViewModel (populated by TasksFragment) ─────────────
+        sessionViewModel = new ViewModelProvider(requireActivity())
+                .get(SessionViewModel.class);
+
         // ── Bind views ────────────────────────────────────────────────────────
         txtTimer      = view.findViewById(R.id.txtTimer);
         imgBackground = view.findViewById(R.id.imgBackground);
@@ -79,36 +86,50 @@ public class TimerFragment extends Fragment {
         viewModel.getUiState().observe(getViewLifecycleOwner(), this::renderState);
 
         // ── Button clicks ─────────────────────────────────────────────────────
-        btnPlay.setOnClickListener(v        -> viewModel.onPlayClicked());
-        btnPause.setOnClickListener(v       -> viewModel.onPauseClicked());
-        tabFocus.setOnClickListener(v       -> viewModel.setMode(PomodoroViewModel.MODE_FOCUS));
-        tabShortBreak.setOnClickListener(v  -> viewModel.setMode(PomodoroViewModel.MODE_SHORT_BREAK));
-        tabLongBreak.setOnClickListener(v   -> viewModel.setMode(PomodoroViewModel.MODE_LONG_BREAK));
+        btnPlay.setOnClickListener(v       -> viewModel.onPlayClicked());
+        btnPause.setOnClickListener(v      -> viewModel.onPauseClicked());
+        tabFocus.setOnClickListener(v      -> viewModel.setMode(PomodoroViewModel.MODE_FOCUS));
+        tabShortBreak.setOnClickListener(v -> viewModel.setMode(PomodoroViewModel.MODE_SHORT_BREAK));
+        tabLongBreak.setOnClickListener(v  -> viewModel.setMode(PomodoroViewModel.MODE_LONG_BREAK));
         view.findViewById(R.id.btnSettings).setOnClickListener(v -> openSettings());
         view.findViewById(R.id.btnTodo).setOnClickListener(v -> openTaskPanel());
 
-        // ── Load recommended tasks from Room ──────────────────────────────────
+        // ── Firebase user ─────────────────────────────────────────────────────
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user != null) currentUserId = user.getUid();
 
+        // ── Room DAO ──────────────────────────────────────────────────────────
         todoDao = AppDatabase.getDatabase(requireContext()).todoDao();
-        loadRecommendedTasks();
-    }
 
-    // ── Load todos: due within 7 days + any HIGH priority items ──────────────
+        // ── Load recommended tasks for the timer's own task panel ────────────
+        loadRecommendedTasks();
+
+        // ── Load session tasks from TasksFragment (if a session was started) ─
+        sessionViewModel.getSessionTasks().observe(getViewLifecycleOwner(), tasks -> {
+            if (tasks != null && !tasks.isEmpty()) {
+                // Push into PomodoroViewModel's myTasks list
+                viewModel.setMyTasksFromSession(tasks);
+                // Auto-set the first task as the active focus label
+                // but only if nothing is already active
+                PomodoroUiState current = viewModel.getUiState().getValue();
+                if (current != null && current.activeTaskLabel == null) {
+                    viewModel.setActiveTask(tasks.get(0));
+                }
+            }
+        });
+    }
     private void loadRecommendedTasks() {
         if (currentUserId == null) return;
 
         long now  = System.currentTimeMillis();
         long week = now + (7L * 24 * 60 * 60 * 1000);
 
-        // Observe all active todos then filter/merge in-memory
         todoDao.getAllByUser(currentUserId).observe(getViewLifecycleOwner(), all -> {
             if (all == null) return;
 
             List<TodoEntity> recommended = new ArrayList<>();
             for (TodoEntity t : all) {
-                boolean dueSoon = t.getDueDate() != null
+                boolean dueSoon      = t.getDueDate() != null
                         && t.getDueDate() >= now
                         && t.getDueDate() <= week;
                 boolean highPriority = "HIGH".equals(t.getPriority());

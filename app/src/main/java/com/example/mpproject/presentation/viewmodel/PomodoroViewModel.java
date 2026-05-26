@@ -178,4 +178,8 @@ public class PomodoroViewModel extends ViewModel {
         }
         myTasks.setValue(current);
     }
+
+    public void setMyTasksFromSession(List<String> tasks) {
+        myTasks.setValue(new ArrayList<>(tasks));
+    }
 }

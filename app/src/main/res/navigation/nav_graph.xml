@@ -129,6 +129,10 @@
             android:id="@+id/action_tasksFragment_to_settingsFragment"
             app:destination="@id/settingsFragment" />
 
+        <action
+            android:id="@+id/action_tasksFragment_to_timerFragment"
+            app:destination="@id/timerFragment" />
+
     </fragment>
 
     <fragment
