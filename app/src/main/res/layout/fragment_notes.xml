@@ -364,6 +364,6 @@
         app:elevation="6dp"
         app:icon="@drawable/ic_add"
         app:iconTint="?attr/colorOnPrimary"
-        app:shapeAppearanceOverlay="@style/ShapeAppearance.MPProject.FAB" />
+         />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
