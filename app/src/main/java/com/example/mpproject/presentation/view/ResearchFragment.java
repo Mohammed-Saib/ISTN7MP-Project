@@ -4,7 +4,9 @@ import android.app.Dialog;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.GradientDrawable;
@@ -13,31 +15,28 @@ import android.os.Bundle;
 import android.provider.OpenableColumns;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
+import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import android.content.res.Configuration;
-import android.graphics.Color;
-import android.content.res.ColorStateList;
-import android.view.Gravity;
-import android.view.WindowManager;
-import android.webkit.WebSettings;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
-import android.widget.FrameLayout;
-
-import java.util.Locale;
-
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LiveData;
@@ -60,6 +59,7 @@ import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.List;
+import java.util.Locale;
 
 public class ResearchFragment extends Fragment {
 
@@ -95,14 +95,22 @@ public class ResearchFragment extends Fragment {
             });
 
     public ResearchFragment() {
-        super(R.layout.fragment_research);
+        // Required empty public constructor
+    }
+
+    @Nullable
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater,
+                             @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
+        binding = FragmentResearchBinding.inflate(inflater, container, false);
+        return binding.getRoot();
     }
 
     @Override
-    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        binding = FragmentResearchBinding.bind(view);
         auth = FirebaseAuth.getInstance();
 
         setupViewModel();
@@ -184,19 +192,7 @@ public class ResearchFragment extends Fragment {
                 String query = s == null ? "" : s.toString().trim();
 
                 if (query.isEmpty()) {
-                    int checkedId = binding.chipGroupResearchFilters.getCheckedChipId();
-
-                    if (checkedId == R.id.chipUnread) {
-                        observeStatus("UNREAD");
-                    } else if (checkedId == R.id.chipReading) {
-                        observeStatus("READING");
-                    } else if (checkedId == R.id.chipRead) {
-                        observeStatus("READ");
-                    } else if (checkedId == R.id.chipImportant) {
-                        observeImportant();
-                    } else {
-                        observeAllPapers();
-                    }
+                    refreshCurrentFilter();
                 } else {
                     observeSearch(query);
                 }
@@ -210,7 +206,7 @@ public class ResearchFragment extends Fragment {
     }
 
     private String getCurrentUserId() {
-        if (auth.getCurrentUser() == null) {
+        if (auth == null || auth.getCurrentUser() == null) {
             return null;
         }
 
@@ -219,33 +215,51 @@ public class ResearchFragment extends Fragment {
 
     private void observeAllPapers() {
         String userId = getCurrentUserId();
-        if (userId == null) return;
+
+        if (userId == null) {
+            Toast.makeText(requireContext(), "Please log in first.", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         switchLiveData(viewModel.getAllPapers(userId));
     }
 
     private void observeStatus(String status) {
         String userId = getCurrentUserId();
-        if (userId == null) return;
+
+        if (userId == null) {
+            Toast.makeText(requireContext(), "Please log in first.", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         switchLiveData(viewModel.getPapersByStatus(userId, status));
     }
 
     private void observeImportant() {
         String userId = getCurrentUserId();
-        if (userId == null) return;
+
+        if (userId == null) {
+            Toast.makeText(requireContext(), "Please log in first.", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         switchLiveData(viewModel.getImportantPapers(userId));
     }
 
     private void observeSearch(String query) {
         String userId = getCurrentUserId();
-        if (userId == null) return;
+
+        if (userId == null) {
+            Toast.makeText(requireContext(), "Please log in first.", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         switchLiveData(viewModel.searchPapers(userId, query));
     }
 
     private void switchLiveData(LiveData<List<ResearchPaperEntity>> newLiveData) {
+        if (newLiveData == null || binding == null) return;
+
         if (currentLiveData != null) {
             currentLiveData.removeObservers(getViewLifecycleOwner());
         }
@@ -253,6 +267,8 @@ public class ResearchFragment extends Fragment {
         currentLiveData = newLiveData;
 
         currentLiveData.observe(getViewLifecycleOwner(), papers -> {
+            if (binding == null) return;
+
             adapter.submitList(papers);
 
             boolean empty = papers == null || papers.isEmpty();
@@ -261,13 +277,43 @@ public class ResearchFragment extends Fragment {
         });
     }
 
+    private void refreshCurrentFilter() {
+        if (binding == null) return;
+
+        String query = binding.edtSearchResearch.getText() == null
+                ? ""
+                : binding.edtSearchResearch.getText().toString().trim();
+
+        if (!query.isEmpty()) {
+            observeSearch(query);
+            return;
+        }
+
+        int checkedId = binding.chipGroupResearchFilters.getCheckedChipId();
+
+        if (checkedId == R.id.chipUnread) {
+            observeStatus("UNREAD");
+        } else if (checkedId == R.id.chipReading) {
+            observeStatus("READING");
+        } else if (checkedId == R.id.chipRead) {
+            observeStatus("READ");
+        } else if (checkedId == R.id.chipImportant) {
+            observeImportant();
+        } else {
+            observeAllPapers();
+        }
+    }
+
     private void openFilePicker() {
         filePickerLauncher.launch(new String[]{
                 "application/pdf",
                 "application/msword",
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 "application/vnd.ms-powerpoint",
-                "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                "image/jpeg",
+                "image/png",
+                "image/webp"
         });
     }
 
@@ -280,28 +326,28 @@ public class ResearchFragment extends Fragment {
                         == android.content.res.Configuration.UI_MODE_NIGHT_YES;
 
         int surfaceColor = isDarkMode
-                ? android.graphics.Color.rgb(28, 28, 30)
-                : android.graphics.Color.WHITE;
+                ? Color.rgb(28, 28, 30)
+                : Color.WHITE;
 
         int softSurfaceColor = isDarkMode
-                ? android.graphics.Color.rgb(40, 40, 44)
-                : android.graphics.Color.rgb(246, 248, 252);
+                ? Color.rgb(40, 40, 44)
+                : Color.rgb(246, 248, 252);
 
         int onSurfaceColor = isDarkMode
-                ? android.graphics.Color.WHITE
-                : android.graphics.Color.rgb(20, 20, 24);
+                ? Color.WHITE
+                : Color.rgb(20, 20, 24);
 
         int onSurfaceVariantColor = isDarkMode
-                ? android.graphics.Color.rgb(210, 210, 215)
-                : android.graphics.Color.rgb(95, 99, 108);
+                ? Color.rgb(210, 210, 215)
+                : Color.rgb(95, 99, 108);
 
         int primaryColor = isDarkMode
-                ? android.graphics.Color.rgb(130, 180, 255)
-                : android.graphics.Color.rgb(33, 120, 230);
+                ? Color.rgb(130, 180, 255)
+                : Color.rgb(33, 120, 230);
 
         int outlineColor = isDarkMode
-                ? android.graphics.Color.rgb(90, 90, 96)
-                : android.graphics.Color.rgb(215, 221, 232);
+                ? Color.rgb(90, 90, 96)
+                : Color.rgb(215, 221, 232);
 
         ScrollView scrollView = new ScrollView(requireContext());
         scrollView.setFillViewport(false);
@@ -420,16 +466,16 @@ public class ResearchFragment extends Fragment {
         btnCancel.setAllCaps(false);
         btnCancel.setCornerRadius(dp(18));
         btnCancel.setStrokeWidth(dp(1));
-        btnCancel.setStrokeColor(android.content.res.ColorStateList.valueOf(outlineColor));
+        btnCancel.setStrokeColor(ColorStateList.valueOf(outlineColor));
         btnCancel.setTextColor(primaryColor);
-        btnCancel.setBackgroundTintList(android.content.res.ColorStateList.valueOf(softSurfaceColor));
+        btnCancel.setBackgroundTintList(ColorStateList.valueOf(softSurfaceColor));
 
         MaterialButton btnSave = new MaterialButton(requireContext());
         btnSave.setText("Save");
         btnSave.setAllCaps(false);
         btnSave.setCornerRadius(dp(18));
-        btnSave.setBackgroundTintList(android.content.res.ColorStateList.valueOf(primaryColor));
-        btnSave.setTextColor(android.graphics.Color.WHITE);
+        btnSave.setBackgroundTintList(ColorStateList.valueOf(primaryColor));
+        btnSave.setTextColor(Color.WHITE);
 
         LinearLayout.LayoutParams cancelParams = new LinearLayout.LayoutParams(
                 0,
@@ -505,14 +551,12 @@ public class ResearchFragment extends Fragment {
 
         Window window = dialog.getWindow();
         if (window != null) {
-            window.setBackgroundDrawable(new ColorDrawable(android.graphics.Color.TRANSPARENT));
+            window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
 
-            android.view.WindowManager.LayoutParams params =
-                    new android.view.WindowManager.LayoutParams();
-
+            WindowManager.LayoutParams params = new WindowManager.LayoutParams();
             params.copyFrom(window.getAttributes());
             params.width = (int) (getResources().getDisplayMetrics().widthPixels * 0.88);
-            params.height = android.view.WindowManager.LayoutParams.WRAP_CONTENT;
+            params.height = WindowManager.LayoutParams.WRAP_CONTENT;
             window.setAttributes(params);
         }
     }
@@ -540,10 +584,10 @@ public class ResearchFragment extends Fragment {
         if (minLines == 1) {
             editText.setMinHeight(dp(58));
             editText.setPadding(dp(12), dp(10), dp(12), 0);
-            editText.setGravity(android.view.Gravity.CENTER_VERTICAL);
+            editText.setGravity(Gravity.CENTER_VERTICAL);
         } else {
             editText.setMinHeight(dp(92));
-            editText.setGravity(android.view.Gravity.TOP | android.view.Gravity.START);
+            editText.setGravity(Gravity.TOP | Gravity.START);
             editText.setPadding(dp(12), dp(14), dp(12), dp(10));
         }
 
@@ -589,8 +633,9 @@ public class ResearchFragment extends Fragment {
             extension = cleaned.substring(dotIndex);
         }
 
-        return cleaned.substring(0, 32) + "..." + extension;
+        return cleaned.substring(0, Math.min(32, cleaned.length())) + "..." + extension;
     }
+
     private String getText(TextInputEditText editText) {
         if (editText.getText() == null) {
             return "";
@@ -599,18 +644,17 @@ public class ResearchFragment extends Fragment {
         return editText.getText().toString().trim();
     }
 
-
     private int dp(int value) {
         return (int) (value * getResources().getDisplayMetrics().density);
     }
 
     private int adjustAlpha(int color, float factor) {
-        int alpha = Math.round(android.graphics.Color.alpha(color) * factor);
-        int red = android.graphics.Color.red(color);
-        int green = android.graphics.Color.green(color);
-        int blue = android.graphics.Color.blue(color);
+        int alpha = Math.round(Color.alpha(color) * factor);
+        int red = Color.red(color);
+        int green = Color.green(color);
+        int blue = Color.blue(color);
 
-        return android.graphics.Color.argb(alpha, red, green, blue);
+        return Color.argb(alpha, red, green, blue);
     }
 
     private void showPaperOptionsDialog(ResearchPaperEntity paper) {
@@ -625,7 +669,7 @@ public class ResearchFragment extends Fragment {
         };
 
         new MaterialAlertDialogBuilder(requireContext())
-                .setTitle(paper.getTitle())
+                .setTitle(paper.getTitle().isEmpty() ? "Research Paper" : paper.getTitle())
                 .setItems(options, (dialog, which) -> {
                     ResearchPaperEntity updatedPaper;
 
@@ -681,32 +725,6 @@ public class ResearchFragment extends Fragment {
                 })
                 .show();
     }
-    private void refreshCurrentFilter() {
-        if (binding == null) return;
-
-        String query = binding.edtSearchResearch.getText() == null
-                ? ""
-                : binding.edtSearchResearch.getText().toString().trim();
-
-        if (!query.isEmpty()) {
-            observeSearch(query);
-            return;
-        }
-
-        int checkedId = binding.chipGroupResearchFilters.getCheckedChipId();
-
-        if (checkedId == R.id.chipUnread) {
-            observeStatus("UNREAD");
-        } else if (checkedId == R.id.chipReading) {
-            observeStatus("READING");
-        } else if (checkedId == R.id.chipRead) {
-            observeStatus("READ");
-        } else if (checkedId == R.id.chipImportant) {
-            observeImportant();
-        } else {
-            observeAllPapers();
-        }
-    }
 
     private ResearchPaperEntity copyPaper(ResearchPaperEntity original) {
         if (original == null) return null;
@@ -731,6 +749,7 @@ public class ResearchFragment extends Fragment {
                 original.getUpdatedAt()
         );
     }
+
     private void showPaperDetailsDialog(ResearchPaperEntity paper) {
         String details =
                 "Title:\n" + paper.getTitle() + "\n\n" +
@@ -738,6 +757,7 @@ public class ResearchFragment extends Fragment {
                         "Year:\n" + paper.getYear() + "\n\n" +
                         "Category:\n" + paper.getCategory() + "\n\n" +
                         "Status:\n" + paper.getStatus() + "\n\n" +
+                        "Important:\n" + (paper.isImportant() ? "Yes" : "No") + "\n\n" +
                         "Summary:\n" + paper.getSummary() + "\n\n" +
                         "Key Findings:\n" + paper.getKeyFindings() + "\n\n" +
                         "Methodology:\n" + paper.getMethodology() + "\n\n" +
@@ -788,6 +808,7 @@ public class ResearchFragment extends Fragment {
                 fileUrl
         );
     }
+
     private void openResearchFileInsideApp(String title, String fileName, String fileUrl) {
         String safeFileUrl = fileUrl == null ? "" : fileUrl.trim();
         String safeFileName = fileName == null ? "" : fileName.trim().toLowerCase(Locale.ROOT);
@@ -797,13 +818,6 @@ public class ResearchFragment extends Fragment {
             Toast.makeText(requireContext(), "File is not uploaded yet.", Toast.LENGTH_SHORT).show();
             return;
         }
-
-        /*
-         * This follows the same idea as NotesFragment:
-         * - PDFs are opened with the device PDF viewer.
-         * - Word, PowerPoint, and image files open inside a full-screen in-app dialog.
-         * - Office documents use Google Docs viewer inside a WebView.
-         */
 
         if (safeFileName.endsWith(".pdf")) {
             Intent intent = new Intent(Intent.ACTION_VIEW);
@@ -1035,6 +1049,7 @@ public class ResearchFragment extends Fragment {
 
         if (currentLiveData != null) {
             currentLiveData.removeObservers(getViewLifecycleOwner());
+            currentLiveData = null;
         }
 
         binding = null;
