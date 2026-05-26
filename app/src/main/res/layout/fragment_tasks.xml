@@ -140,6 +140,16 @@
 
                 </com.google.android.material.chip.ChipGroup>
             </HorizontalScrollView>
+            <Button
+                android:id="@+id/btnStartSession"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="▶  Start a Session"
+                android:textColor="#FFFFFF"
+                android:backgroundTint="?attr/colorPrimary"
+                android:layout_marginHorizontal="20dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"/>
         </LinearLayout>
     </com.google.android.material.appbar.AppBarLayout>
 

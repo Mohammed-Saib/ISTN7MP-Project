@@ -24,8 +24,14 @@ import com.example.mpproject.domain.model.Module;
 import com.example.mpproject.domain.model.Todo;
 import com.example.mpproject.presentation.adapter.TaskAdapter;
 import com.example.mpproject.presentation.view.todo.TodoBottomSheetFragment;
+import com.example.mpproject.presentation.viewmodel.SessionViewModel;
 import com.example.mpproject.presentation.viewmodel.TaskViewModel;
 import com.example.mpproject.presentation.viewmodel.TaskViewModelFactory;
+import com.example.mpproject.presentation.adapter.SessionTaskAdapter;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.tabs.TabLayout;
+import com.google.android.material.textfield.TextInputEditText;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -43,6 +49,8 @@ public class TasksFragment extends Fragment implements TaskAdapter.OnTaskClickLi
     private final Map<String, String> moduleNameMap = new HashMap<>();
     private List<Todo> currentFullList = new ArrayList<>();
     private String searchQuery = "";
+
+    private SessionViewModel sessionViewModel;
 
     @Nullable
     @Override
@@ -77,6 +85,12 @@ public class TasksFragment extends Fragment implements TaskAdapter.OnTaskClickLi
 
         setupSearch();
         setupFilterChips();
+
+        // Session ViewModel — scoped to activity so TimerFragment shares it
+        sessionViewModel = new ViewModelProvider(requireActivity()).get(SessionViewModel.class);
+
+        // "Start a Session" button — add this button to fragment_tasks.xml (see below)
+        binding.btnStartSession.setOnClickListener(v -> openSessionPanel());
 
         binding.btnSettings.setOnClickListener(v ->
                 Navigation.findNavController(v).navigate(R.id.action_tasksFragment_to_settingsFragment));
@@ -166,5 +180,119 @@ public class TasksFragment extends Fragment implements TaskAdapter.OnTaskClickLi
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
+    }
+
+    private void openSessionPanel() {
+        BottomSheetDialog sheet = new BottomSheetDialog(requireContext());
+        View panel = LayoutInflater.from(requireContext())
+                .inflate(R.layout.session_panel, null);
+        sheet.setContentView(panel);
+
+        View panelRec    = panel.findViewById(R.id.panelRecommended);
+        View panelMyList = panel.findViewById(R.id.panelMyList);
+
+        // ── Tab switching ──────────────────────────────────────────────
+        TabLayout tabs = panel.findViewById(R.id.sessionTabLayout);
+        tabs.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            @Override public void onTabSelected(TabLayout.Tab tab) {
+                boolean rec = tab.getPosition() == 0;
+                panelRec.setVisibility(rec    ? View.VISIBLE : View.GONE);
+                panelMyList.setVisibility(rec ? View.GONE    : View.VISIBLE);
+            }
+            @Override public void onTabUnselected(TabLayout.Tab tab) {}
+            @Override public void onTabReselected(TabLayout.Tab tab) {}
+        });
+
+        // ── Recommended list ───────────────────────────────────────────
+        RecyclerView rvRec = panel.findViewById(R.id.rvRecommended);
+        rvRec.setLayoutManager(new LinearLayoutManager(requireContext()));
+        SessionTaskAdapter recAdapter = new SessionTaskAdapter(true);
+        rvRec.setAdapter(recAdapter);
+
+        // Build recommended list: HIGH priority + due within 7 days, sorted
+        taskViewModel.allTodos.observe(getViewLifecycleOwner(), all -> {
+            if (all == null) return;
+            long now  = System.currentTimeMillis();
+            long week = now + 7L * 24 * 60 * 60 * 1000;
+            List<Todo> recommended = new ArrayList<>();
+            for (Todo t : all) {
+                if (t.isCompleted()) continue;
+                boolean dueSoon     = t.getDueDate() != null && t.getDueDate() >= now && t.getDueDate() <= week;
+                boolean highPriority = "HIGH".equals(t.getPriority());
+                if (dueSoon || highPriority) recommended.add(t);
+            }
+            // Sort: HIGH first, then by due date
+            recommended.sort((a, b) -> {
+                int pa = priorityScore(a.getPriority()), pb = priorityScore(b.getPriority());
+                if (pa != pb) return pb - pa;
+                Long da = a.getDueDate(), db = b.getDueDate();
+                if (da == null && db == null) return 0;
+                if (da == null) return 1;
+                if (db == null) return -1;
+                return Long.compare(da, db);
+            });
+            recAdapter.updateTodos(recommended);
+        });
+
+        // Tap a recommended task → add to session list
+        recAdapter.setTapListener(pos -> {
+            sessionViewModel.addTask(recAdapter.getTodoAt(pos).getTitle());
+            // Switch to My Session List tab to confirm
+            TabLayout.Tab myTab = tabs.getTabAt(1);
+            if (myTab != null) myTab.select();
+        });
+
+        // Accept All
+        panel.findViewById(R.id.btnAcceptAll).setOnClickListener(v -> {
+            for (int i = 0; i < recAdapter.getItemCount(); i++) {
+                sessionViewModel.addTask(recAdapter.getTodoAt(i).getTitle());
+            }
+            TabLayout.Tab myTab = tabs.getTabAt(1);
+            if (myTab != null) myTab.select();
+        });
+
+        // ── My Session List ────────────────────────────────────────────
+        RecyclerView rvList = panel.findViewById(R.id.rvSessionList);
+        rvList.setLayoutManager(new LinearLayoutManager(requireContext()));
+        SessionTaskAdapter listAdapter = new SessionTaskAdapter(false);
+        rvList.setAdapter(listAdapter);
+
+        sessionViewModel.getSessionTasks().observe(getViewLifecycleOwner(),
+                tasks -> listAdapter.updateLabels(tasks));
+
+        // Manual add
+        TextInputEditText etTask = panel.findViewById(R.id.etSessionTask);
+        panel.findViewById(R.id.btnAddSessionTask).setOnClickListener(v -> {
+            String text = etTask.getText() != null ? etTask.getText().toString().trim() : "";
+            if (!text.isEmpty()) {
+                sessionViewModel.addTask(text);
+                etTask.setText("");
+            }
+        });
+
+        // Long-press to remove from session list
+        listAdapter.setLongListener(pos -> sessionViewModel.removeTask(pos));
+
+        // ── Start Session → navigate to timer ─────────────────────────
+        panel.findViewById(R.id.btnStartSession).setOnClickListener(v -> {
+            if (sessionViewModel.getSessionTasks().getValue() == null
+                    || sessionViewModel.getSessionTasks().getValue().isEmpty()) {
+                Toast.makeText(requireContext(),
+                        "Add at least one task to start a session", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            sheet.dismiss();
+            Navigation.findNavController(requireView())
+                    .navigate(R.id.action_tasksFragment_to_timerFragment);
+        });
+
+        sheet.show();
+    }
+
+    private int priorityScore(String p) {
+        if ("HIGH".equals(p))   return 3;
+        if ("MEDIUM".equals(p)) return 2;
+        if ("LOW".equals(p))    return 1;
+        return 0;
     }
 }
