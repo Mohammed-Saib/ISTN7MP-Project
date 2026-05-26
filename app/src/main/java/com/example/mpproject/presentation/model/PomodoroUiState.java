@@ -5,11 +5,13 @@ public class PomodoroUiState {
     public int currentMode;
     public boolean isRunning;
     public String theme;
+    public String activeTaskLabel;
 
-    public PomodoroUiState(String timeDisplay, int currentMode, boolean isRunning, String theme){
+    public PomodoroUiState(String timeDisplay, int currentMode, boolean isRunning, String theme,String activeTaskLabel){
         this.TimeDisplay = timeDisplay;
         this.currentMode = currentMode;
         this.isRunning = isRunning;
         this.theme = theme;
+        this.activeTaskLabel = activeTaskLabel;
     }
 }

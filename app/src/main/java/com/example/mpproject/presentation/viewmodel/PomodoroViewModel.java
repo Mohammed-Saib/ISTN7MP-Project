@@ -4,9 +4,14 @@ import android.os.CountDownTimer;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
+
+import com.example.mpproject.data.local.entity.TodoEntity;
 import com.example.mpproject.domain.model.PomodoroSettings;
 import com.example.mpproject.domain.repository.PomodoroRepository;
 import com.example.mpproject.presentation.model.PomodoroUiState;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class PomodoroViewModel extends ViewModel {
 
@@ -23,7 +28,13 @@ public class PomodoroViewModel extends ViewModel {
     private int currentMode = MODE_FOCUS;
     private int completedSessions = 0;
 
-    private final MutableLiveData<PomodoroUiState> uiState = new MutableLiveData<>();
+    private String activeTaskLabel = null; // label shown above focus tabs
+    private final MutableLiveData<List<TodoEntity>> recommendedTasks = new MutableLiveData<>();
+    public LiveData<List<TodoEntity>> getRecommendedTasks() { return recommendedTasks; }
+    private final MutableLiveData<List<String>> myTasks = new MutableLiveData<>(new ArrayList<>());
+    public LiveData<List<String>> getMyTasks() { return myTasks;}
+
+        private final MutableLiveData<PomodoroUiState> uiState = new MutableLiveData<>();
     public LiveData<PomodoroUiState> getUiState() { return uiState; }
 
     public PomodoroViewModel(PomodoroRepository repository) {
@@ -96,12 +107,75 @@ public class PomodoroViewModel extends ViewModel {
         int minutes = (int)(timeLeftMillis / 1000) / 60;
         int seconds = (int)(timeLeftMillis / 1000) % 60;
         String display = String.format("%02d:%02d", minutes, seconds);
-        uiState.setValue(new PomodoroUiState(display, currentMode, isRunning, settings.theme));
+        uiState.setValue(new PomodoroUiState(display, currentMode, isRunning, settings.theme, activeTaskLabel));
     }
 
     @Override
     protected void onCleared() {
         super.onCleared();
         cancelTimer();
+    }
+
+    // Call this from TimerFragment after querying Room
+    public void setRecommendedTasks(List<TodoEntity> tasks) {
+        // Sort: HIGH priority first, then by due date ascending
+        List<TodoEntity> sorted = new ArrayList<>(tasks);
+        sorted.sort((a, b) -> {
+            int pa = priorityScore(a.getPriority());
+            int pb = priorityScore(b.getPriority());
+            if (pa != pb) return pb - pa; // higher score = higher priority first
+            Long da = a.getDueDate(), db = b.getDueDate();
+            if (da == null && db == null) return 0;
+            if (da == null) return 1;
+            if (db == null) return -1;
+            return Long.compare(da, db);
+        });
+        recommendedTasks.setValue(sorted);
+    }
+
+    private int priorityScore(String p) {
+        if ("HIGH".equals(p))   return 3;
+        if ("MEDIUM".equals(p)) return 2;
+        if ("LOW".equals(p))    return 1;
+        return 0;
+    }
+
+    public void setActiveTask(String label) {
+        activeTaskLabel = label;
+        emitState();
+    }
+
+    public void clearActiveTask() {
+        activeTaskLabel = null;
+        emitState();
+    }
+    public void addMyTask(String label) {
+        List<String> current = new ArrayList<>(myTasks.getValue() != null
+                ? myTasks.getValue() : new ArrayList<>());
+        current.add(label);
+        myTasks.setValue(current);
+    }
+
+    public void removeMyTask(int index) {
+        List<String> current = new ArrayList<>(myTasks.getValue() != null
+                ? myTasks.getValue() : new ArrayList<>());
+        if (index >= 0 && index < current.size()) {
+            current.remove(index);
+            myTasks.setValue(current);
+        }
+    }
+
+    // Accept all recommended into My Tasks
+    public void acceptAllRecommended() {
+        List<TodoEntity> recommended = recommendedTasks.getValue();
+        if (recommended == null) return;
+        List<String> current = new ArrayList<>(myTasks.getValue() != null
+                ? myTasks.getValue() : new ArrayList<>());
+        for (TodoEntity t : recommended) {
+            if (!current.contains(t.getTitle())) {
+                current.add(t.getTitle());
+            }
+        }
+        myTasks.setValue(current);
     }
 }

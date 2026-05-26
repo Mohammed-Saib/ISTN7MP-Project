@@ -81,6 +81,7 @@ public abstract class AppDatabase extends RoomDatabase {
                                     DatabaseMigrations.MIGRATION_6_7,
                                     DatabaseMigrations.MIGRATION_7_8
                             )
+                            .fallbackToDestructiveMigration()
                             .build();
                 }
             }

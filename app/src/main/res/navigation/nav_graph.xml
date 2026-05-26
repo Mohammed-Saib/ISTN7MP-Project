@@ -58,6 +58,9 @@
             android:id="@+id/action_homeFragment_to_settingsFragment"
             app:destination="@id/settingsFragment" />
 
+        <action android:id="@+id/action_homeFragment_to_timerFragment"
+            app:destination="@id/timerFragment" />
+
     </fragment>
 
     <fragment
@@ -161,8 +164,6 @@
         android:name="com.example.mpproject.presentation.view.TimerFragment"
         android:label="Timer"
         tools:layout="@layout/timer_layout">
-        <action android:id="@+id/action_homeFragment_to_timerFragment"
-            app:destination="@id/timerFragment" />
     </fragment>
 
 
@@ -170,6 +171,6 @@
         android:id="@+id/timerSettingFragment"
         android:name="com.example.mpproject.presentation.view.TimerSettingFragment"
         android:label="Timer"
-        tools:layout="@layout/timer_layout"/>
+        tools:layout="@layout/timer_settings_dialog"/>
 
 </navigation>
