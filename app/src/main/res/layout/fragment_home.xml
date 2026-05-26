@@ -4,207 +4,398 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?android:colorBackground"
+    android:background="#DCEEFF"
     android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingBottom="24dp">
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
+        android:paddingTop="20dp"
+        android:paddingBottom="90dp">
 
-        <!-- ── Top bar: greeting + settings icon ── -->
+        <!-- ───────────────── TOP SECTION ───────────────── -->
         <LinearLayout
             android:id="@+id/home_top_bar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:paddingHorizontal="20dp"
-            android:paddingTop="56dp"
             android:paddingBottom="8dp">
+
+            <TextView
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:background="@drawable/bg_circle_surface"
+                android:gravity="center"
+                android:text="IMG"
+                android:textColor="?attr/colorPrimary"
+                android:textSize="9sp"
+                android:textStyle="bold" />
 
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
                 android:layout_weight="1"
                 android:orientation="vertical">
 
-                <!-- Greeting line populated at runtime -->
                 <TextView
                     android:id="@+id/tv_greeting"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="?attr/colorOnBackground"
-                    android:textSize="22sp"
+                    android:textColor="#000000"
+                    android:textSize="20sp"
                     android:textStyle="bold"
-                    tools:text="Good morning, Alex" />
+                    tools:text="Good morning, Test Test" />
 
                 <TextView
                     android:id="@+id/tv_date"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="?attr/colorOnSurface"
-                    android:textSize="13sp"
-                    tools:text="Saturday, 17 May" />
+                    android:textColor="?attr/colorPrimary"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    tools:text="Tuesday, 26 May" />
             </LinearLayout>
 
-            <!-- Settings / avatar button -->
             <ImageButton
                 android:id="@+id/btn_settings"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
                 android:background="@drawable/bg_circle_surface"
                 android:contentDescription="Settings"
                 android:src="@drawable/ic_settings"
-                app:tint="?attr/colorOnSurface"
+                app:tint="?attr/colorPrimary"
                 tools:ignore="TouchTargetSizeCheck" />
         </LinearLayout>
 
-        <!-- ── Quick-capture buttons ── -->
+
+        <!-- ───────────────── QUOTE + PROGRESS ROW ───────────────── -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginHorizontal="20dp"
-            android:layout_marginTop="16dp"
+            android:layout_height="112dp"
+            android:layout_marginTop="8dp"
             android:orientation="horizontal">
 
-            <!-- New Task -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginEnd="7dp"
+                android:layout_weight="1.35"
+                android:background="@drawable/bg_rounded_surface"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:padding="9dp">
+
+                <TextView
+                    android:layout_width="62dp"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/bg_rounded_surface"
+                    android:gravity="center"
+                    android:text="IMAGE"
+                    android:textColor="?attr/colorPrimary"
+                    android:textSize="9sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="9dp"
+                    android:layout_weight="1"
+                    android:text="studying\ndoesn’t\nsuck as\nmuch as\nfailing"
+                    android:textColor="#000000"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="7dp"
+                android:layout_weight="0.85"
+                android:background="@drawable/bg_rounded_surface"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="9dp">
+
+                <TextView
+                    android:layout_width="78dp"
+                    android:layout_height="78dp"
+                    android:background="@drawable/bg_circle_surface"
+                    android:gravity="center"
+                    android:text="PROGRESS\n\nover\n\nPERFECTION"
+                    android:textAlignment="center"
+                    android:textColor="#000000"
+                    android:textSize="9sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </LinearLayout>
+
+
+        <!-- ───────────────── MODULES SECTION ───────────────── -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="72dp"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_rounded_surface"
+            android:orientation="vertical"
+            android:paddingStart="14dp"
+            android:paddingTop="12dp"
+            android:paddingEnd="14dp"
+            android:paddingBottom="10dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Modules"
+                    android:textColor="#000000"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="See all  ›"
+                    android:textColor="?attr/colorOnSurface"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginTop="4dp"
+                android:layout_weight="1"
+                android:gravity="center_vertical"
+                android:text="Module cards/placeholders go here"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+
+        <!-- ───────────────── NEW TASK + NEW NOTE DIRECTLY UNDER MODULES ───────────────── -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal">
+
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_new_task"
                 style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="0dp"
-                android:layout_height="48dp"
-                android:layout_marginEnd="8dp"
+                android:layout_height="42dp"
+                android:layout_marginEnd="6dp"
                 android:layout_weight="1"
                 android:text="@string/btn_new_task"
-                android:textSize="14sp"
-                app:cornerRadius="14dp"
+                android:textSize="11sp"
+                app:cornerRadius="12dp"
                 app:icon="@drawable/ic_nav_todo"
-                app:iconSize="18dp" />
+                app:iconSize="15dp" />
 
-            <!-- New Note -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_new_note"
                 style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="0dp"
-                android:layout_height="48dp"
-                android:layout_marginStart="8dp"
+                android:layout_height="42dp"
+                android:layout_marginStart="6dp"
                 android:layout_weight="1"
                 android:text="@string/btn_new_note"
-                android:textSize="14sp"
-                app:cornerRadius="14dp"
+                android:textSize="11sp"
+                app:cornerRadius="12dp"
                 app:icon="@drawable/ic_nav_notes"
-                app:iconSize="18dp" />
+                app:iconSize="15dp" />
         </LinearLayout>
 
-        <!-- ── Today's tasks section ── -->
+
+        <!-- ───────────────── IMAGE + TIMER ROW ───────────────── -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginHorizontal="20dp"
-            android:layout_marginTop="24dp"
-            android:gravity="center_vertical"
+            android:layout_height="170dp"
+            android:layout_marginTop="12dp"
             android:orientation="horizontal">
 
-            <TextView
+            <LinearLayout
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginEnd="7dp"
                 android:layout_weight="1"
-                android:text="@string/label_today"
-                android:textColor="?attr/colorOnBackground"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                android:background="@drawable/bg_rounded_surface"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="10dp">
 
-            <TextView
-                android:id="@+id/btn_see_all_tasks"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="?attr/colorPrimary"
-                android:textSize="13sp"
-                tools:text="See all" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="I CAN DO IT!"
+                    android:textColor="#000000"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_marginTop="6dp"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="IMAGE"
+                    android:textColor="?attr/colorPrimary"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="7dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_rounded_surface"
+                android:orientation="vertical"
+                android:padding="10dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Timer"
+                    android:textColor="#000000"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/btnTimer"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_rounded_surface"
+                    android:gravity="center"
+                    android:padding="8dp"
+                    android:text="25:00\n\nSTART"
+                    android:textAlignment="center"
+                    android:textColor="?attr/colorOnSurface"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
         </LinearLayout>
 
-        <!-- Placeholder shown when no tasks are due today -->
-        <TextView
-            android:id="@+id/tv_no_tasks"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginHorizontal="20dp"
-            android:layout_marginTop="8dp"
-            android:background="@drawable/bg_rounded_surface"
-            android:gravity="center"
-            android:padding="20dp"
-            android:text="@string/label_no_tasks_today"
-            android:textColor="?attr/colorOnSurface"
-            android:textSize="14sp"
-            android:visibility="visible" />
 
-        <!-- Today's tasks list (populated at runtime) -->
+        <!-- ───────────────── TODAY'S TASKS CARD ───────────────── -->
         <LinearLayout
-            android:id="@+id/container_today_tasks"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="20dp"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_rounded_surface"
             android:orientation="vertical"
-            android:visibility="gone"
-            tools:visibility="gone" />
+            android:padding="14dp">
 
-        <!-- ── Coming Up section ── -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/label_today"
+                    android:textColor="#000000"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/btn_see_all_tasks"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="?attr/colorOnSurface"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    tools:text="See all  ›" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tv_no_tasks"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_rounded_surface"
+                android:gravity="center"
+                android:padding="12dp"
+                android:text="@string/label_no_tasks_today"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="12sp"
+                android:visibility="visible" />
+
+            <LinearLayout
+                android:id="@+id/container_today_tasks"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:orientation="vertical"
+                android:visibility="gone"
+                tools:visibility="gone" />
+        </LinearLayout>
+
+
+        <!-- ───────────────── COMING UP CARD ───────────────── -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="20dp"
-            android:layout_marginTop="24dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_rounded_surface"
+            android:orientation="vertical"
+            android:padding="14dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/label_coming_up"
+                    android:textColor="#000000"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/btn_see_calendar"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="?attr/colorOnSurface"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    tools:text="See all  ›" />
+            </LinearLayout>
 
             <TextView
-                android:layout_width="0dp"
+                android:id="@+id/tv_no_upcoming"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/label_coming_up"
-                android:textColor="?attr/colorOnBackground"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/btn_see_calendar"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="?attr/colorPrimary"
-                android:textSize="13sp"
-                tools:text="See all" />
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_rounded_surface"
+                android:gravity="center"
+                android:padding="12dp"
+                android:text="@string/label_no_upcoming"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="12sp" />
         </LinearLayout>
 
-        <!-- Upcoming events placeholder -->
-        <TextView
-            android:id="@+id/tv_no_upcoming"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginHorizontal="20dp"
-            android:layout_marginTop="8dp"
-            android:background="@drawable/bg_rounded_surface"
-            android:gravity="center"
-            android:padding="20dp"
-            android:text="@string/label_no_upcoming"
-            android:textColor="?attr/colorOnSurface"
-            android:textSize="14sp" />
-
-        <TextView
-            android:id="@+id/btnTimer"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginHorizontal="20dp"
-            android:layout_marginTop="8dp"
-            android:background="@drawable/bg_rounded_surface"
-            android:gravity="center"
-            android:padding="20dp"
-            android:text="Go to pomodoro timer"
-            android:textColor="?attr/colorOnSurface"
-            android:textSize="14sp"
-            />
     </LinearLayout>
 
 </ScrollView>
