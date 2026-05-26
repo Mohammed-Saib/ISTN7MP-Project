@@ -17,6 +17,7 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.mpproject.databinding.FragmentTodoBottomSheetBinding;
 import com.example.mpproject.domain.model.Module;
 import com.example.mpproject.domain.model.Todo;
+import com.example.mpproject.presentation.notification.ReminderScheduler;
 import com.example.mpproject.presentation.viewmodel.TaskViewModel;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 
@@ -65,8 +66,11 @@ public class TodoBottomSheetFragment extends BottomSheetDialogFragment {
         viewModel.modules.observe(getViewLifecycleOwner(), this::populateModuleDropdown);
 
         // Recurrence pattern dropdown
-        ArrayAdapter<String> patternAdapter = new ArrayAdapter<>(requireContext(),
-                android.R.layout.simple_dropdown_item_1line, RECURRENCE_LABELS);
+        ArrayAdapter<String> patternAdapter = new ArrayAdapter<>(
+                requireContext(),
+                android.R.layout.simple_dropdown_item_1line,
+                RECURRENCE_LABELS
+        );
         binding.actvRecurrencePattern.setAdapter(patternAdapter);
         binding.actvRecurrencePattern.setText(RECURRENCE_LABELS[1], false); // default Weekly
 
@@ -80,7 +84,9 @@ public class TodoBottomSheetFragment extends BottomSheetDialogFragment {
         binding.btnPickRecurrenceEnd.setOnClickListener(v -> showRecurrenceEndPicker());
 
         Todo editing = viewModel.getEditingTodo().getValue();
-        if (editing != null) prefillForm(editing);
+        if (editing != null) {
+            prefillForm(editing);
+        }
 
         binding.btnPickDate.setOnClickListener(v -> showDatePicker());
         binding.btnClearDate.setOnClickListener(v -> clearDate());
@@ -90,15 +96,23 @@ public class TodoBottomSheetFragment extends BottomSheetDialogFragment {
         binding.btnDelete.setOnClickListener(v -> {
             Todo ev = viewModel.getEditingTodo().getValue();
             if (ev == null) return;
+
             if (ev.getRecurrenceGroupId() != null) {
                 new AlertDialog.Builder(requireContext())
                         .setTitle("Delete Task")
                         .setMessage("Delete just this occurrence, or all occurrences of this recurring task?")
                         .setPositiveButton("This one", (d, w) -> {
+                            ReminderScheduler.cancelTaskReminder(requireContext(), ev.getTodoId());
                             viewModel.deleteTask(ev);
                             dismiss();
                         })
                         .setNeutralButton("All occurrences", (d, w) -> {
+                            /*
+                             * This cancels the reminder for the currently selected task.
+                             * If you later schedule notifications for every occurrence in a recurring group,
+                             * then TaskViewModel/deleteTaskGroup should also cancel each occurrence reminder.
+                             */
+                            ReminderScheduler.cancelTaskReminder(requireContext(), ev.getTodoId());
                             viewModel.deleteTaskGroup(ev);
                             dismiss();
                         })
@@ -109,6 +123,7 @@ public class TodoBottomSheetFragment extends BottomSheetDialogFragment {
                         .setTitle("Delete Task")
                         .setMessage("Delete \"" + ev.getTitle() + "\"?")
                         .setPositiveButton("Delete", (d, w) -> {
+                            ReminderScheduler.cancelTaskReminder(requireContext(), ev.getTodoId());
                             viewModel.deleteTask(ev);
                             dismiss();
                         })
@@ -127,19 +142,29 @@ public class TodoBottomSheetFragment extends BottomSheetDialogFragment {
         binding.etDescription.setText(todo.getDescription());
 
         switch (todo.getPriority() != null ? todo.getPriority() : "MEDIUM") {
-            case "HIGH": binding.chipPriorityHigh.setChecked(true); break;
-            case "LOW":  binding.chipPriorityLow.setChecked(true);  break;
-            default:     binding.chipPriorityMedium.setChecked(true); break;
+            case "HIGH":
+                binding.chipPriorityHigh.setChecked(true);
+                break;
+
+            case "LOW":
+                binding.chipPriorityLow.setChecked(true);
+                break;
+
+            default:
+                binding.chipPriorityMedium.setChecked(true);
+                break;
         }
 
         if (todo.getDueDate() != null) {
             pickedDate = Calendar.getInstance();
             pickedDate.setTimeInMillis(todo.getDueDate());
+
             Calendar c = pickedDate;
             if (c.get(Calendar.HOUR_OF_DAY) != 0 || c.get(Calendar.MINUTE) != 0) {
                 pickedHour   = c.get(Calendar.HOUR_OF_DAY);
                 pickedMinute = c.get(Calendar.MINUTE);
             }
+
             updateDateButton();
         }
 
@@ -173,28 +198,41 @@ public class TodoBottomSheetFragment extends BottomSheetDialogFragment {
     private void populateModuleDropdown(List<Module> modules) {
         moduleNames.clear();
         moduleIds.clear();
+
         moduleNames.add("None");
         moduleIds.add(null);
+
         if (modules != null) {
             for (Module m : modules) {
-                moduleNames.add(m.getName() + (m.getModuleCode() != null ? " (" + m.getModuleCode() + ")" : ""));
+                moduleNames.add(
+                        m.getName()
+                                + (m.getModuleCode() != null ? " (" + m.getModuleCode() + ")" : "")
+                );
                 moduleIds.add(m.getModuleId());
             }
         }
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(),
-                android.R.layout.simple_dropdown_item_1line, moduleNames);
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                requireContext(),
+                android.R.layout.simple_dropdown_item_1line,
+                moduleNames
+        );
         binding.actvModule.setAdapter(adapter);
 
         Todo editing = viewModel.getEditingTodo().getValue();
         if (editing != null && editing.getModuleId() != null) {
             int idx = moduleIds.indexOf(editing.getModuleId());
-            if (idx >= 0) binding.actvModule.setText(moduleNames.get(idx), false);
+            if (idx >= 0) {
+                binding.actvModule.setText(moduleNames.get(idx), false);
+            }
         }
     }
 
     private void showDatePicker() {
         Calendar init = pickedDate != null ? pickedDate : Calendar.getInstance();
-        new DatePickerDialog(requireContext(),
+
+        new DatePickerDialog(
+                requireContext(),
                 (picker, year, month, day) -> {
                     pickedDate = Calendar.getInstance();
                     pickedDate.set(year, month, day, 0, 0, 0);
@@ -211,6 +249,7 @@ public class TodoBottomSheetFragment extends BottomSheetDialogFragment {
         pickedDate   = null;
         pickedHour   = null;
         pickedMinute = null;
+
         binding.btnPickDate.setText("No date");
         binding.btnClearDate.setVisibility(View.GONE);
         binding.llTimeRow.setVisibility(View.GONE);
@@ -220,19 +259,25 @@ public class TodoBottomSheetFragment extends BottomSheetDialogFragment {
     private void showTimePicker() {
         int initH = pickedHour   != null ? pickedHour   : 9;
         int initM = pickedMinute != null ? pickedMinute : 0;
-        new TimePickerDialog(requireContext(),
+
+        new TimePickerDialog(
+                requireContext(),
                 (picker, hour, minute) -> {
                     pickedHour   = hour;
                     pickedMinute = minute;
                     updateTimeButton();
                 },
-                initH, initM, true
+                initH,
+                initM,
+                true
         ).show();
     }
 
     private void showRecurrenceEndPicker() {
         Calendar init = recurrenceEndDate != null ? recurrenceEndDate : Calendar.getInstance();
-        new DatePickerDialog(requireContext(),
+
+        new DatePickerDialog(
+                requireContext(),
                 (picker, year, month, day) -> {
                     recurrenceEndDate = Calendar.getInstance();
                     recurrenceEndDate.set(year, month, day, 23, 59, 59);
@@ -247,9 +292,11 @@ public class TodoBottomSheetFragment extends BottomSheetDialogFragment {
 
     private void updateDateButton() {
         if (pickedDate == null) return;
+
         binding.btnPickDate.setText(DATE_FMT.format(pickedDate.getTime()));
         binding.btnClearDate.setVisibility(View.VISIBLE);
         binding.llTimeRow.setVisibility(View.VISIBLE);
+
         updateTimeButton();
     }
 
@@ -257,7 +304,7 @@ public class TodoBottomSheetFragment extends BottomSheetDialogFragment {
         if (pickedHour != null) {
             Calendar t = Calendar.getInstance();
             t.set(Calendar.HOUR_OF_DAY, pickedHour);
-            t.set(Calendar.MINUTE, pickedMinute);
+            t.set(Calendar.MINUTE, pickedMinute != null ? pickedMinute : 0);
             binding.btnPickTime.setText(TIME_FMT.format(t.getTime()));
         } else {
             binding.btnPickTime.setText("No time");
@@ -266,11 +313,14 @@ public class TodoBottomSheetFragment extends BottomSheetDialogFragment {
 
     private void saveTask() {
         String title = binding.etTitle.getText() != null
-                ? binding.etTitle.getText().toString().trim() : "";
+                ? binding.etTitle.getText().toString().trim()
+                : "";
+
         if (title.isEmpty()) {
             binding.layoutTitle.setError("Title required");
             return;
         }
+
         binding.layoutTitle.setError(null);
 
         String priority = resolvePriority();
@@ -278,44 +328,100 @@ public class TodoBottomSheetFragment extends BottomSheetDialogFragment {
         Long dueMs = null;
         if (pickedDate != null) {
             Calendar due = (Calendar) pickedDate.clone();
+
             if (pickedHour != null) {
                 due.set(Calendar.HOUR_OF_DAY, pickedHour);
-                due.set(Calendar.MINUTE, pickedMinute);
+                due.set(Calendar.MINUTE, pickedMinute != null ? pickedMinute : 0);
             }
+
             due.set(Calendar.SECOND, 0);
             due.set(Calendar.MILLISECOND, 0);
+
             dueMs = due.getTimeInMillis();
         }
 
         String selectedModuleName = binding.actvModule.getText() != null
-                ? binding.actvModule.getText().toString() : "";
+                ? binding.actvModule.getText().toString()
+                : "";
+
         int moduleIdx = moduleNames.indexOf(selectedModuleName);
-        String moduleId = (moduleIdx > 0 && moduleIdx < moduleIds.size()) ? moduleIds.get(moduleIdx) : null;
+        String moduleId = (moduleIdx > 0 && moduleIdx < moduleIds.size())
+                ? moduleIds.get(moduleIdx)
+                : null;
 
         String description = binding.etDescription.getText() != null
-                ? binding.etDescription.getText().toString().trim() : null;
-        if (description != null && description.isEmpty()) description = null;
+                ? binding.etDescription.getText().toString().trim()
+                : null;
+
+        if (description != null && description.isEmpty()) {
+            description = null;
+        }
 
         String recurrencePattern = null;
         Long recurrenceEndMs = null;
+
         if (binding.switchRecurring.isChecked()) {
             recurrencePattern = resolveRecurrencePattern();
-            recurrenceEndMs = recurrenceEndDate != null ? recurrenceEndDate.getTimeInMillis() : null;
+            recurrenceEndMs = recurrenceEndDate != null
+                    ? recurrenceEndDate.getTimeInMillis()
+                    : null;
         }
 
         Todo editing = viewModel.getEditingTodo().getValue();
+
         if (editing != null) {
             editing.setTitle(title);
             editing.setDescription(description);
             editing.setPriority(priority);
             editing.setDueDate(dueMs);
             editing.setModuleId(moduleId);
+
+            /*
+             * Cancel the old reminder first.
+             * This prevents duplicate notifications if the user edits the due date/time.
+             */
+            ReminderScheduler.cancelTaskReminder(requireContext(), editing.getTodoId());
+
             viewModel.updateTask(editing);
+
+            /*
+             * Schedule the updated reminder.
+             * If dueMs is null or in the past, ReminderScheduler will safely ignore it.
+             */
+            ReminderScheduler.scheduleTaskReminder(
+                    requireContext(),
+                    editing.getTodoId(),
+                    title,
+                    dueMs,
+                    priority
+            );
+
             Toast.makeText(getContext(), "Task updated", Toast.LENGTH_SHORT).show();
+
         } else {
-            viewModel.addTask(title, description, priority, dueMs, moduleId, recurrencePattern, recurrenceEndMs);
+            Todo createdTodo = viewModel.addTask(
+                    title,
+                    description,
+                    priority,
+                    dueMs,
+                    moduleId,
+                    recurrencePattern,
+                    recurrenceEndMs
+            );
+
+            if (createdTodo != null) {
+                ReminderScheduler.scheduleTaskReminder(
+                        requireContext(),
+                        createdTodo.getTodoId(),
+                        createdTodo.getTitle(),
+                        createdTodo.getDueDate(),
+                        createdTodo.getPriority()
+                );
+            }
+
             Toast.makeText(getContext(), "Task added", Toast.LENGTH_SHORT).show();
         }
+
         dismiss();
     }
 
@@ -327,10 +433,15 @@ public class TodoBottomSheetFragment extends BottomSheetDialogFragment {
 
     private String resolveRecurrencePattern() {
         String label = binding.actvRecurrencePattern.getText() != null
-                ? binding.actvRecurrencePattern.getText().toString() : "";
+                ? binding.actvRecurrencePattern.getText().toString()
+                : "";
+
         for (int i = 0; i < RECURRENCE_LABELS.length; i++) {
-            if (RECURRENCE_LABELS[i].equals(label)) return RECURRENCE_PATTERNS[i];
+            if (RECURRENCE_LABELS[i].equals(label)) {
+                return RECURRENCE_PATTERNS[i];
+            }
         }
+
         return "WEEKLY";
     }
 

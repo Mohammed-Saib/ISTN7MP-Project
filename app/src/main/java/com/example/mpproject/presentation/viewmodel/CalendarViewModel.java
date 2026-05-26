@@ -107,12 +107,21 @@ public class CalendarViewModel extends ViewModel {
 
     // ── CRUD ────────────────────────────────────────────────────────────────
 
-    public void addEvent(String title, String type, long startTime, Long endTime,
-                         boolean allDay, String moduleId, String description,
-                         String recurrencePattern, Long recurrenceEndDate) {
+    public CalendarEvent addEvent(String title, String type, long startTime, Long endTime,
+                                  boolean allDay, String moduleId, String description,
+                                  String recurrencePattern, Long recurrenceEndDate) {
         if (recurrencePattern != null) {
-            createRecurringEvents(title, type, startTime, endTime, allDay, moduleId, description,
-                    recurrencePattern, recurrenceEndDate);
+            return createRecurringEvents(
+                    title,
+                    type,
+                    startTime,
+                    endTime,
+                    allDay,
+                    moduleId,
+                    description,
+                    recurrencePattern,
+                    recurrenceEndDate
+            );
         } else {
             CalendarEvent e = new CalendarEvent(UUID.randomUUID().toString(), userId, title, startTime);
             e.setType(type);
@@ -122,6 +131,7 @@ public class CalendarViewModel extends ViewModel {
             e.setDescription(description);
             e.setUpdatedAt(System.currentTimeMillis());
             eventRepo.insert(e);
+            return e;
         }
     }
 
@@ -159,20 +169,27 @@ public class CalendarViewModel extends ViewModel {
 
     // Pre-create all instances of a recurring event (eager strategy, capped at 100).
     // Collected into a list and inserted as a single batch to avoid 100 separate DB transactions.
-    private void createRecurringEvents(String title, String type, long startTime, Long endTime,
-                                       boolean allDay, String moduleId, String description,
-                                       String recurrencePattern, Long recurrenceEndDate) {
+    private CalendarEvent createRecurringEvents(String title, String type, long startTime, Long endTime,
+                                                boolean allDay, String moduleId, String description,
+                                                String recurrencePattern, Long recurrenceEndDate) {
         String groupId = UUID.randomUUID().toString();
+
         Calendar cur = Calendar.getInstance();
         cur.setTimeInMillis(startTime);
+
         long durationMs = (endTime != null) ? endTime - startTime : 0;
         long now = System.currentTimeMillis();
         int count = 0;
 
         List<CalendarEvent> batch = new ArrayList<>();
+        CalendarEvent firstEvent = null;
+
         while (count < 100) {
             long curStart = cur.getTimeInMillis();
-            if (recurrenceEndDate != null && curStart > recurrenceEndDate) break;
+
+            if (recurrenceEndDate != null && curStart > recurrenceEndDate) {
+                break;
+            }
 
             CalendarEvent e = new CalendarEvent(UUID.randomUUID().toString(), userId, title, curStart);
             e.setType(type);
@@ -184,18 +201,43 @@ public class CalendarViewModel extends ViewModel {
             e.setRecurrenceGroupId(groupId);
             e.setRecurrenceEndDate(recurrenceEndDate);
             e.setUpdatedAt(now);
+
             batch.add(e);
+
+            if (firstEvent == null) {
+                firstEvent = e;
+            }
+
             count++;
 
             switch (recurrencePattern) {
-                case "DAILY":   cur.add(Calendar.DAY_OF_YEAR, 1); break;
-                case "WEEKLY":  cur.add(Calendar.WEEK_OF_YEAR, 1); break;
-                case "MONTHLY": cur.add(Calendar.MONTH, 1); break;
-                case "YEARLY":  cur.add(Calendar.YEAR, 1); break;
-                default: break;
+                case "DAILY":
+                    cur.add(Calendar.DAY_OF_YEAR, 1);
+                    break;
+
+                case "WEEKLY":
+                    cur.add(Calendar.WEEK_OF_YEAR, 1);
+                    break;
+
+                case "MONTHLY":
+                    cur.add(Calendar.MONTH, 1);
+                    break;
+
+                case "YEARLY":
+                    cur.add(Calendar.YEAR, 1);
+                    break;
+
+                default:
+                    count = 100;
+                    break;
             }
         }
-        if (!batch.isEmpty()) eventRepo.insertBatch(batch);
+
+        if (!batch.isEmpty()) {
+            eventRepo.insertBatch(batch);
+        }
+
+        return firstEvent;
     }
 
     private void scheduleNextTodoOccurrence(Todo completed) {

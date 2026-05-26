@@ -20,10 +20,22 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.os.Build;
+
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
+import com.example.mpproject.presentation.notification.NotificationHelper;
+import com.example.mpproject.presentation.notification.ReminderScheduler;
+
 // [View] Single-activity host — owns the NavController and bottom nav visibility.
 public class MainActivity extends AppCompatActivity {
 
     private boolean syncingBottomNav = false;
+    private static final int REQUEST_POST_NOTIFICATIONS = 5001;
+
 
     // Unconditional merge-sync from Firestore for all data types.
     // Runs on startup so that items added on another device are pulled in.
@@ -50,6 +62,12 @@ public class MainActivity extends AppCompatActivity {
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
         setContentView(R.layout.activity_main);
+        NotificationHelper.createNotificationChannels(this);
+        requestNotificationPermissionIfNeeded();
+
+        //testing
+        //l trigger a motivation notification 1 minute after the app opens
+        ReminderScheduler.scheduleMotivationTestReminder(this, 1);
 
         BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
 
@@ -125,9 +143,22 @@ public class MainActivity extends AppCompatActivity {
         if (currentUser != null) {
             navController.navigate(R.id.homeFragment);
             restoreFromFirestore(currentUser.getUid());
+            ReminderScheduler.scheduleDailyStudyReminder(this);
         }
     }
 
+    private void requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return;
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(
+                    this,
+                    new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                    REQUEST_POST_NOTIFICATIONS
+            );
+        }
+    }
     private int getMatchingBottomTabId(int destinationId) {
         if (destinationId == R.id.homeFragment) {
             return R.id.homeFragment;
