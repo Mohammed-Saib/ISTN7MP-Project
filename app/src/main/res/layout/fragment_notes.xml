@@ -363,6 +363,7 @@
         app:cornerRadius="28dp"
         app:elevation="6dp"
         app:icon="@drawable/ic_add"
-        app:iconTint="?attr/colorOnPrimary" />
+        app:iconTint="?attr/colorOnPrimary"
+         />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
