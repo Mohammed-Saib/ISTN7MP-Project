@@ -19,7 +19,7 @@
             android:orientation="vertical"
             android:paddingHorizontal="20dp"
             android:paddingTop="52dp"
-            android:paddingBottom="4dp">
+            android:paddingBottom="12dp">
 
             <!-- Title row -->
             <LinearLayout
@@ -32,7 +32,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="@string/title_todo"
+                    android:text="To Do List"
                     android:textColor="?attr/colorOnBackground"
                     android:textSize="20sp"
                     android:textStyle="bold" />
@@ -63,20 +63,20 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:orientation="horizontal"
                 android:gravity="center_vertical"
+                android:orientation="horizontal"
                 android:visibility="gone">
 
                 <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                    app:endIconMode="clear_text"
-                    app:boxCornerRadiusTopStart="12dp"
-                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusBottomEnd="12dp"
                     app:boxCornerRadiusBottomStart="12dp"
-                    app:boxCornerRadiusBottomEnd="12dp">
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:endIconMode="clear_text">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/et_search_task"
@@ -140,16 +140,22 @@
 
                 </com.google.android.material.chip.ChipGroup>
             </HorizontalScrollView>
-            <Button
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnStartSession"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="▶  Start a Session"
-                android:textColor="#FFFFFF"
-                android:backgroundTint="?attr/colorPrimary"
+                android:layout_height="46dp"
                 android:layout_marginHorizontal="20dp"
-                android:layout_marginTop="8dp"
-                android:layout_marginBottom="8dp"/>
+                android:layout_marginTop="10dp"
+                android:layout_marginBottom="2dp"
+                android:text="▶  Start a Session"
+                android:textAllCaps="false"
+                android:textColor="?attr/colorOnPrimaryContainer"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                app:backgroundTint="?attr/colorPrimaryContainer"
+                app:cornerRadius="22dp" />
+
         </LinearLayout>
     </com.google.android.material.appbar.AppBarLayout>
 

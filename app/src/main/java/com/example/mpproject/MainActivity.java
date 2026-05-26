@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.view.View;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.view.WindowCompat;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
@@ -56,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        applySavedThemeMode();
         super.onCreate(savedInstanceState);
 
         // Allow content to draw behind system bars (edge-to-edge)
@@ -145,6 +147,14 @@ public class MainActivity extends AppCompatActivity {
             restoreFromFirestore(currentUser.getUid());
             ReminderScheduler.scheduleDailyStudyReminder(this);
         }
+    }
+
+    private void applySavedThemeMode() {
+        SharedPreferences prefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
+        boolean darkMode = prefs.getBoolean("pref_dark_mode", false);
+        AppCompatDelegate.setDefaultNightMode(
+                darkMode ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO
+        );
     }
 
     private void requestNotificationPermissionIfNeeded() {

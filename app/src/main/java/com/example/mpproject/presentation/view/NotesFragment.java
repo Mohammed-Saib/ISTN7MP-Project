@@ -81,6 +81,7 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.StorageMetadata;
 import java.io.InputStream;
+import android.content.res.Configuration;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -206,6 +207,12 @@ public class NotesFragment extends Fragment {
     private int dp(int value) {
         return (int) (value * getResources().getDisplayMetrics().density);
     }
+    private boolean isDarkMode() {
+        int nightMode = getResources().getConfiguration().uiMode
+                & Configuration.UI_MODE_NIGHT_MASK;
+
+        return nightMode == Configuration.UI_MODE_NIGHT_YES;
+    }
     private GradientDrawable roundedBg(int color, int strokeColor, int strokeWidthDp, int radiusDp) {
         GradientDrawable drawable = new GradientDrawable();
         drawable.setColor(color);
@@ -278,21 +285,41 @@ public class NotesFragment extends Fragment {
             @Override
             public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
                 TextView view = (TextView) super.getView(position, convertView, parent);
+
                 view.setTextSize(14);
-                view.setTextColor(DARK_BLUE);
                 view.setSingleLine(true);
                 view.setPadding(dp(12), 0, dp(8), 0);
+
+                if (isDarkMode()) {
+                    view.setTextColor(Color.WHITE);
+                    view.setBackgroundColor(Color.TRANSPARENT);
+                } else {
+                    view.setTextColor(DARK_BLUE);
+                    view.setBackgroundColor(Color.TRANSPARENT);
+                }
+
                 return view;
             }
+
             @Override
             public View getDropDownView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
                 TextView view = (TextView) super.getDropDownView(position, convertView, parent);
+
                 view.setTextSize(14);
-                view.setTextColor(DARK_BLUE);
                 view.setPadding(dp(14), dp(10), dp(14), dp(10));
+
+                if (isDarkMode()) {
+                    view.setTextColor(Color.WHITE);
+                    view.setBackgroundColor(0xFF111827);
+                } else {
+                    view.setTextColor(DARK_BLUE);
+                    view.setBackgroundColor(Color.WHITE);
+                }
+
                 return view;
             }
         };
+
         spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         return spinnerAdapter;
     }
@@ -638,8 +665,9 @@ public class NotesFragment extends Fragment {
         if (chip == null) return;
 
         int selectedBackground = 0xFF2F9E8F;
-        int normalBackground = Color.WHITE;
         int selectedText = Color.WHITE;
+
+        int normalBackground = isDarkMode() ? 0xFFFFFFFF : Color.WHITE;
         int normalText = Color.BLACK;
 
         chip.setChipBackgroundColor(ColorStateList.valueOf(
@@ -648,8 +676,11 @@ public class NotesFragment extends Fragment {
 
         chip.setTextColor(selected ? selectedText : normalText);
 
-        chip.setChipStrokeColor(ColorStateList.valueOf(Color.BLACK));
-        chip.setChipStrokeWidth(dp(selected ? 1 : 1));
+        chip.setChipStrokeColor(ColorStateList.valueOf(
+                isDarkMode() ? 0xFF374151 : Color.BLACK
+        ));
+
+        chip.setChipStrokeWidth(dp(1));
     }
     private void observeData() {
         viewModel.getDisplayNotes().observe(getViewLifecycleOwner(), notes -> {

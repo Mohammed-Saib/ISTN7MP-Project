@@ -1,64 +1,64 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- ── Core ── -->
+    <!-- Core -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <!-- ── Light mode surfaces ── -->
-    <color name="bg_light">#F6F4EF</color>
+    <!-- Light mode: light blue app background + white cards, matching the mockups -->
+    <color name="bg_light">#EAF6FF</color>
     <color name="surface_light">#FFFFFF</color>
-    <color name="surface_raised_light">#F0EDE6</color>
-    <color name="outline_light">#C8C4BC</color>
-    <color name="on_bg_light">#1A1814</color>
-    <color name="on_surface_secondary_light">#6B6760</color>
+    <color name="surface_raised_light">#D7E9FF</color>
+    <color name="outline_light">#C7DDF5</color>
+    <color name="on_bg_light">#061A33</color>
+    <color name="on_surface_secondary_light">#50637A</color>
 
-    <!-- ── Dark mode surfaces ── -->
-    <color name="bg_dark">#0F1115</color>
-    <color name="surface_dark">#1A1D23</color>
-    <color name="surface_raised_dark">#20242B</color>
-    <color name="outline_dark">#3A3F49</color>
-    <color name="on_bg_dark">#F0EEE9</color>
-    <color name="on_surface_secondary_dark">#9098A8</color>
+    <!-- Dark mode: keep the existing black/deep-blue mockup look -->
+    <color name="bg_dark">#000000</color>
+    <color name="surface_dark">#070A12</color>
+    <color name="surface_raised_dark">#101826</color>
+    <color name="outline_dark">#1F3354</color>
+    <color name="on_bg_dark">#F4F8FF</color>
+    <color name="on_surface_secondary_dark">#8EA2C4</color>
 
-    <!-- ── Brand blue ── -->
-    <color name="primary_light">#1A6FE0</color>
-    <color name="primary_dark">#5E9BFF</color>
+    <!-- Brand blue -->
+    <color name="primary_light">#0B73FF</color>
+    <color name="primary_dark">#0B73FF</color>
     <color name="on_primary">#FFFFFF</color>
-    <color name="primary_container_light">#D6E8FF</color>
-    <color name="primary_container_dark">#1A3460</color>
+    <color name="primary_container_light">#D7E8FF</color>
+    <color name="primary_container_dark">#0B1E3A</color>
 
-    <!-- ── Module accent palette (7 colours, light + dark variants) ── -->
-    <color name="module_indigo_light">#4F46E5</color>
-    <color name="module_indigo_dark">#818CF8</color>
+    <!-- Module accent palette -->
+    <color name="module_indigo_light">#2563EB</color>
+    <color name="module_indigo_dark">#60A5FA</color>
     <color name="module_rose_light">#E11D48</color>
     <color name="module_rose_dark">#FB7185</color>
-    <color name="module_amber_light">#D97706</color>
+    <color name="module_amber_light">#F59E0B</color>
     <color name="module_amber_dark">#FCD34D</color>
-    <color name="module_teal_light">#0D9488</color>
+    <color name="module_teal_light">#10B981</color>
     <color name="module_teal_dark">#2DD4BF</color>
     <color name="module_violet_light">#7C3AED</color>
     <color name="module_violet_dark">#A78BFA</color>
     <color name="module_forest_light">#16A34A</color>
     <color name="module_forest_dark">#4ADE80</color>
-    <color name="module_ember_light">#EA580C</color>
+    <color name="module_ember_light">#F97316</color>
     <color name="module_ember_dark">#FB923C</color>
 
-    <!-- ── Calendar event type colours (fixed, not theme-dependent) ── -->
-    <color name="event_lecture">#1A6FE0</color>
-    <color name="event_exam">#DC2626</color>
-    <color name="event_assignment">#D97706</color>
-    <color name="event_personal">#0D9488</color>
-    <color name="event_todo">#6B6760</color>
-    <color name="event_quiz">#EA580C</color>
-    <color name="event_test">#C2410C</color>
-    <color name="event_lab">#7C3AED</color>
+    <!-- Calendar event type colours -->
+    <color name="event_lecture">#0B73FF</color>
+    <color name="event_exam">#EF4444</color>
+    <color name="event_assignment">#F59E0B</color>
+    <color name="event_personal">#10B981</color>
+    <color name="event_todo">#64748B</color>
+    <color name="event_quiz">#FB923C</color>
+    <color name="event_test">#F97316</color>
+    <color name="event_lab">#8B5CF6</color>
 
-    <!-- ── Semantic ── -->
-    <color name="error">#DC2626</color>
+    <!-- Semantic -->
+    <color name="error">#EF4444</color>
     <color name="on_error">#FFFFFF</color>
-    <color name="priority_high">#DC2626</color>
-    <color name="priority_medium">#D97706</color>
-    <color name="priority_low">#16A34A</color>
+    <color name="priority_high">#EF4444</color>
+    <color name="priority_medium">#F59E0B</color>
+    <color name="priority_low">#22C55E</color>
 
 </resources>

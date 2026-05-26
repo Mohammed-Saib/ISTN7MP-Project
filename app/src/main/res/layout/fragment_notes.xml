@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#AFC4E3">
+    android:background="?android:colorBackground">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -25,7 +25,7 @@
                 android:fontFamily="serif"
                 android:gravity="center"
                 android:text="Notes Library"
-                android:textColor="#050505"
+                android:textColor="?attr/colorOnBackground"
                 android:textSize="27sp"
                 android:textStyle="bold" />
 
@@ -38,7 +38,7 @@
                 android:contentDescription="Settings"
                 android:padding="7dp"
                 android:src="@drawable/ic_settings"
-                app:tint="#050505" />
+                app:tint="?attr/colorOnBackground" />
 
         </FrameLayout>
 
@@ -47,16 +47,17 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="0 notes found"
+            android:textColor="?attr/colorOnBackground"
             android:visibility="gone" />
 
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="40dp"
             android:layout_marginTop="12dp"
-            app:cardBackgroundColor="#FFFFFF"
+            app:cardBackgroundColor="?attr/colorSurface"
             app:cardCornerRadius="18dp"
             app:cardElevation="0dp"
-            app:strokeColor="#E8E0D6"
+            app:strokeColor="?attr/colorOutline"
             app:strokeWidth="1dp">
 
             <LinearLayout
@@ -72,7 +73,7 @@
                     android:layout_height="24dp"
                     android:contentDescription="Search"
                     android:src="@drawable/ic_search"
-                    app:tint="#050505" />
+                    app:tint="?attr/colorOnSurface" />
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/search_input_layout"
@@ -102,8 +103,8 @@
                         android:paddingEnd="8dp"
                         android:paddingBottom="0dp"
                         android:singleLine="true"
-                        android:textColor="#050505"
-                        android:textColorHint="#2D2D2D"
+                        android:textColor="?attr/colorOnSurface"
+                        android:textColorHint="?attr/colorOnSurfaceVariant"
                         android:textSize="14sp" />
 
                 </com.google.android.material.textfield.TextInputLayout>
@@ -144,9 +145,9 @@
                 app:chipBackgroundColor="#2F9E8F"
                 app:chipCornerRadius="9dp"
                 app:chipMinHeight="34dp"
-                app:chipStrokeColor="#050505"
-                app:chipStrokeWidth="1.2dp"
-                app:rippleColor="#DDE8F7" />
+                app:chipStrokeColor="?attr/colorOutline"
+                app:chipStrokeWidth="1dp"
+                app:rippleColor="?attr/colorSurfaceVariant" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/chip_modules"
@@ -161,16 +162,16 @@
                 android:paddingEnd="0dp"
                 android:text="Module Notes"
                 android:textAlignment="center"
-                android:textColor="#050505"
+                android:textColor="?attr/colorOnSurface"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 app:checkedIconVisible="false"
-                app:chipBackgroundColor="#FFFFFF"
+                app:chipBackgroundColor="?attr/colorSurface"
                 app:chipCornerRadius="9dp"
                 app:chipMinHeight="34dp"
-                app:chipStrokeColor="#050505"
-                app:chipStrokeWidth="1.2dp"
-                app:rippleColor="#DDE8F7" />
+                app:chipStrokeColor="?attr/colorOutline"
+                app:chipStrokeWidth="1dp"
+                app:rippleColor="?attr/colorSurfaceVariant" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/chip_personal"
@@ -185,16 +186,16 @@
                 android:paddingEnd="0dp"
                 android:text="Personal Notes"
                 android:textAlignment="center"
-                android:textColor="#050505"
+                android:textColor="?attr/colorOnSurface"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 app:checkedIconVisible="false"
-                app:chipBackgroundColor="#FFFFFF"
+                app:chipBackgroundColor="?attr/colorSurface"
                 app:chipCornerRadius="9dp"
                 app:chipMinHeight="34dp"
-                app:chipStrokeColor="#050505"
-                app:chipStrokeWidth="1.2dp"
-                app:rippleColor="#DDE8F7" />
+                app:chipStrokeColor="?attr/colorOutline"
+                app:chipStrokeWidth="1dp"
+                app:rippleColor="?attr/colorSurfaceVariant" />
 
         </com.google.android.material.chip.ChipGroup>
 
@@ -203,10 +204,10 @@
             android:layout_width="match_parent"
             android:layout_height="42dp"
             android:layout_marginTop="10dp"
-            app:cardBackgroundColor="#FFFFFF"
+            app:cardBackgroundColor="?attr/colorSurfaceVariant"
             app:cardCornerRadius="18dp"
             app:cardElevation="0dp"
-            app:strokeColor="#050505"
+            app:strokeColor="?attr/colorOutline"
             app:strokeWidth="1dp">
 
             <LinearLayout
@@ -222,7 +223,7 @@
                     android:layout_height="wrap_content"
                     android:fontFamily="serif"
                     android:text="Folder:"
-                    android:textColor="#050505"
+                    android:textColor="?attr/colorOnSurface"
                     android:textSize="13sp"
                     android:textStyle="bold" />
 
@@ -235,6 +236,7 @@
                     android:background="@android:color/transparent"
                     android:paddingStart="4dp"
                     android:paddingEnd="4dp"
+                    android:popupBackground="?attr/colorSurface"
                     android:spinnerMode="dropdown" />
 
             </LinearLayout>
@@ -246,10 +248,10 @@
             android:layout_width="match_parent"
             android:layout_height="42dp"
             android:layout_marginTop="10dp"
-            app:cardBackgroundColor="#FFFFFF"
+            app:cardBackgroundColor="?attr/colorSurfaceVariant"
             app:cardCornerRadius="18dp"
             app:cardElevation="0dp"
-            app:strokeColor="#050505"
+            app:strokeColor="?attr/colorOutline"
             app:strokeWidth="1dp">
 
             <LinearLayout
@@ -265,7 +267,7 @@
                     android:layout_height="wrap_content"
                     android:fontFamily="serif"
                     android:text="Module:"
-                    android:textColor="#050505"
+                    android:textColor="?attr/colorOnSurface"
                     android:textSize="13sp"
                     android:textStyle="bold" />
 
@@ -278,6 +280,7 @@
                     android:background="@android:color/transparent"
                     android:paddingStart="4dp"
                     android:paddingEnd="4dp"
+                    android:popupBackground="?attr/colorSurface"
                     android:spinnerMode="dropdown" />
 
             </LinearLayout>
@@ -291,7 +294,7 @@
             android:layout_marginTop="15dp"
             android:fontFamily="serif"
             android:text="All Notes"
-            android:textColor="#050505"
+            android:textColor="?attr/colorOnBackground"
             android:textSize="22sp"
             android:textStyle="bold" />
 
@@ -326,7 +329,7 @@
                     android:fontFamily="serif"
                     android:gravity="center"
                     android:text="No notes found"
-                    android:textColor="#050505"
+                    android:textColor="?attr/colorOnBackground"
                     android:textSize="22sp"
                     android:textStyle="bold" />
 
@@ -337,7 +340,7 @@
                     android:fontFamily="serif"
                     android:gravity="center"
                     android:text="Add a personal note, upload a module file, or clear your search/filter."
-                    android:textColor="#1E2B40"
+                    android:textColor="?attr/colorOnSurfaceVariant"
                     android:textSize="14sp" />
 
             </LinearLayout>
@@ -354,12 +357,12 @@
         android:layout_marginBottom="20dp"
         android:fontFamily="serif"
         android:text="Add Note"
-        android:textColor="#061A33"
+        android:textColor="?attr/colorOnPrimary"
         android:textStyle="bold"
-        app:backgroundTint="#D7E5FF"
+        app:backgroundTint="?attr/colorPrimary"
         app:cornerRadius="28dp"
         app:elevation="6dp"
         app:icon="@drawable/ic_add"
-        app:iconTint="#061A33" />
+        app:iconTint="?attr/colorOnPrimary" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

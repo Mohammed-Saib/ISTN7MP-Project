@@ -9,6 +9,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import android.content.res.Configuration;
+import android.widget.ImageView;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -35,10 +38,23 @@ public class RegisterFragment extends Fragment {
         binding = FragmentRegisterBinding.inflate(inflater, container, false);
         return binding.getRoot();
     }
+    private void applyAuthLogo(View view) {
+        ImageView authLogo = view.findViewById(R.id.auth_logo);
 
+        int currentNightMode = getResources().getConfiguration().uiMode
+                & Configuration.UI_MODE_NIGHT_MASK;
+
+        if (currentNightMode == Configuration.UI_MODE_NIGHT_YES) {
+            authLogo.setImageResource(R.drawable.img_aw_cat_dark);
+        } else {
+            authLogo.setImageResource(R.drawable.img_aw_cat_light);
+        }
+    }
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        applyAuthLogo(view);
 
         ViewModelFactory factory = new ViewModelFactory(new AuthRepositoryImpl());
         authViewModel = new ViewModelProvider(this, factory).get(AuthViewModel.class);

@@ -75,12 +75,17 @@ public class SettingsFragment extends Fragment {
         binding.saveProfileButton.setOnClickListener(v -> saveProfile());
         binding.profileResetPasswordButton.setOnClickListener(v -> resetPassword());
 
-        int nightMode = AppCompatDelegate.getDefaultNightMode();
-        binding.switchDarkMode.setChecked(nightMode == AppCompatDelegate.MODE_NIGHT_YES);
+        SharedPreferences themePrefs = requireContext()
+                .getSharedPreferences("app_prefs", requireContext().MODE_PRIVATE);
+        boolean savedDarkMode = themePrefs.getBoolean("pref_dark_mode", false);
+        binding.switchDarkMode.setChecked(savedDarkMode);
 
-        binding.switchDarkMode.setOnCheckedChangeListener((btn, isChecked) ->
-                AppCompatDelegate.setDefaultNightMode(
-                        isChecked ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO));
+        binding.switchDarkMode.setOnCheckedChangeListener((btn, isChecked) -> {
+            themePrefs.edit().putBoolean("pref_dark_mode", isChecked).apply();
+            AppCompatDelegate.setDefaultNightMode(
+                    isChecked ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO
+            );
+        });
 
         binding.btnBack.setOnClickListener(v ->
                 Navigation.findNavController(v).popBackStack());
