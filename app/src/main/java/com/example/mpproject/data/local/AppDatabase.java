@@ -13,8 +13,10 @@ import com.example.mpproject.data.local.dao.ModuleNoteDao;
 import com.example.mpproject.data.local.dao.NoteFolderDao;
 import com.example.mpproject.data.local.dao.PersonalNoteAttachmentDao;
 import com.example.mpproject.data.local.dao.PersonalNoteDao;
+import com.example.mpproject.data.local.dao.ResearchPaperDao;
 import com.example.mpproject.data.local.dao.TodoDao;
 import com.example.mpproject.data.local.dao.UserDao;
+
 import com.example.mpproject.data.local.entity.AssessmentEntity;
 import com.example.mpproject.data.local.entity.CalendarEventEntity;
 import com.example.mpproject.data.local.entity.ModuleEntity;
@@ -22,6 +24,7 @@ import com.example.mpproject.data.local.entity.ModuleNoteEntity;
 import com.example.mpproject.data.local.entity.NoteFolderEntity;
 import com.example.mpproject.data.local.entity.PersonalNoteAttachmentEntity;
 import com.example.mpproject.data.local.entity.PersonalNoteEntity;
+import com.example.mpproject.data.local.entity.ResearchPaperEntity;
 import com.example.mpproject.data.local.entity.TodoEntity;
 import com.example.mpproject.data.local.entity.UserEntity;
 
@@ -38,9 +41,10 @@ import java.util.concurrent.Executors;
                 TodoEntity.class,
                 CalendarEventEntity.class,
                 AssessmentEntity.class,
-                NoteFolderEntity.class
+                NoteFolderEntity.class,
+                ResearchPaperEntity.class
         },
-        version = 7,
+        version = 8,
         exportSchema = true
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -54,6 +58,7 @@ public abstract class AppDatabase extends RoomDatabase {
     public abstract CalendarEventDao calendarEventDao();
     public abstract AssessmentDao assessmentDao();
     public abstract NoteFolderDao noteFolderDao();
+    public abstract ResearchPaperDao researchPaperDao();
 
     private static volatile AppDatabase INSTANCE;
 
@@ -73,7 +78,8 @@ public abstract class AppDatabase extends RoomDatabase {
                                     DatabaseMigrations.MIGRATION_3_4,
                                     DatabaseMigrations.MIGRATION_4_5,
                                     DatabaseMigrations.MIGRATION_5_6,
-                                    DatabaseMigrations.MIGRATION_6_7
+                                    DatabaseMigrations.MIGRATION_6_7,
+                                    DatabaseMigrations.MIGRATION_7_8
                             )
                             .build();
                 }

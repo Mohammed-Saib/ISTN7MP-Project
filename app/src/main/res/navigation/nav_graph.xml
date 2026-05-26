@@ -77,6 +77,11 @@
     </fragment>
 
     <fragment
+        android:id="@+id/researchFragment"
+        android:name="com.example.mpproject.presentation.view.ResearchFragment"
+        android:label="Research Organiser" />
+
+    <fragment
         android:id="@+id/moduleDetailFragment"
         android:name="com.example.mpproject.presentation.view.modules.ModuleDetailFragment"
         android:label="Module Detail"

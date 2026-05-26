@@ -1,5 +1,6 @@
 package com.example.mpproject.data.local;
 
+import androidx.annotation.NonNull;
 import androidx.room.migration.Migration;
 import androidx.sqlite.db.SupportSQLiteDatabase;
 
@@ -11,7 +12,7 @@ public class DatabaseMigrations {
     // v2 → v3: adds recurrence support columns to todos and calendar_events.
     public static final Migration MIGRATION_2_3 = new Migration(2, 3) {
         @Override
-        public void migrate(SupportSQLiteDatabase db) {
+        public void migrate(@NonNull SupportSQLiteDatabase db) {
             db.execSQL("ALTER TABLE `todos` ADD COLUMN `recurrencePattern` TEXT");
             db.execSQL("ALTER TABLE `todos` ADD COLUMN `recurrenceGroupId` TEXT");
             db.execSQL("ALTER TABLE `todos` ADD COLUMN `recurrenceEndDate` INTEGER");
@@ -25,7 +26,7 @@ public class DatabaseMigrations {
     // v3 → v4: adds indices on recurrenceGroupId for faster group delete/update queries.
     public static final Migration MIGRATION_3_4 = new Migration(3, 4) {
         @Override
-        public void migrate(SupportSQLiteDatabase db) {
+        public void migrate(@NonNull SupportSQLiteDatabase db) {
             db.execSQL("CREATE INDEX IF NOT EXISTS index_todos_recurrenceGroupId ON todos(recurrenceGroupId)");
             db.execSQL("CREATE INDEX IF NOT EXISTS index_calendar_events_recurrenceGroupId ON calendar_events(recurrenceGroupId)");
         }
@@ -34,7 +35,7 @@ public class DatabaseMigrations {
     // v4 → v5: creates assessments table; adds linkedAssessmentId to calendar_events.
     public static final Migration MIGRATION_4_5 = new Migration(4, 5) {
         @Override
-        public void migrate(SupportSQLiteDatabase db) {
+        public void migrate(@NonNull SupportSQLiteDatabase db) {
             db.execSQL("CREATE TABLE IF NOT EXISTS assessments ("
                     + "assessmentId TEXT NOT NULL PRIMARY KEY, "
                     + "moduleId TEXT, "
@@ -62,7 +63,7 @@ public class DatabaseMigrations {
     // v5 → v6: creates personal note attachments table.
     public static final Migration MIGRATION_5_6 = new Migration(5, 6) {
         @Override
-        public void migrate(SupportSQLiteDatabase db) {
+        public void migrate(@NonNull SupportSQLiteDatabase db) {
             db.execSQL("CREATE TABLE IF NOT EXISTS `personal_note_attachments` ("
                     + "`attachmentId` TEXT NOT NULL, "
                     + "`noteId` TEXT, "
@@ -89,7 +90,7 @@ public class DatabaseMigrations {
     // v6 → v7: adds note folders and optional folder links on personal/module notes.
     public static final Migration MIGRATION_6_7 = new Migration(6, 7) {
         @Override
-        public void migrate(SupportSQLiteDatabase db) {
+        public void migrate(@NonNull SupportSQLiteDatabase db) {
             db.execSQL("CREATE TABLE IF NOT EXISTS `note_folders` ("
                     + "`folderId` TEXT NOT NULL, "
                     + "`userId` TEXT, "
@@ -110,6 +111,49 @@ public class DatabaseMigrations {
 
             db.execSQL("CREATE INDEX IF NOT EXISTS `index_module_notes_folderId` "
                     + "ON `module_notes` (`folderId`)");
+        }
+    };
+
+    // v7 → v8: creates research papers table for the Research Organiser feature.
+    public static final Migration MIGRATION_7_8 = new Migration(7, 8) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase db) {
+            db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `research_papers` ("
+                            + "`paperId` TEXT NOT NULL, "
+                            + "`userId` TEXT, "
+                            + "`title` TEXT, "
+                            + "`authors` TEXT, "
+                            + "`year` TEXT, "
+                            + "`category` TEXT, "
+                            + "`summary` TEXT, "
+                            + "`keyFindings` TEXT, "
+                            + "`methodology` TEXT, "
+                            + "`relevance` TEXT, "
+                            + "`fileName` TEXT, "
+                            + "`fileUrl` TEXT, "
+                            + "`storagePath` TEXT, "
+                            + "`status` TEXT, "
+                            + "`important` INTEGER NOT NULL, "
+                            + "`uploadedAt` INTEGER NOT NULL, "
+                            + "`updatedAt` INTEGER NOT NULL, "
+                            + "PRIMARY KEY(`paperId`))"
+            );
+
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_research_papers_userId` "
+                    + "ON `research_papers` (`userId`)");
+
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_research_papers_status` "
+                    + "ON `research_papers` (`status`)");
+
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_research_papers_category` "
+                    + "ON `research_papers` (`category`)");
+
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_research_papers_authors` "
+                    + "ON `research_papers` (`authors`)");
+
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_research_papers_year` "
+                    + "ON `research_papers` (`year`)");
         }
     };
 
