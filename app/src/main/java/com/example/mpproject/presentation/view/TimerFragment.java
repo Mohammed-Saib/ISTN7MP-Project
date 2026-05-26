@@ -184,8 +184,11 @@ public class TimerFragment extends Fragment {
             resId = mode == PomodoroViewModel.MODE_SHORT_BREAK ? R.drawable.snoopy_sb
                     : mode == PomodoroViewModel.MODE_LONG_BREAK  ? R.drawable.snoopy_lb
                     : R.drawable.snoopy_focus;
-
-        } else {
+        } else  if ("Study Space".equals(theme)) {
+            resId = mode == PomodoroViewModel.MODE_SHORT_BREAK ? R.drawable.studyarea_sb
+                    : mode == PomodoroViewModel.MODE_LONG_BREAK ? R.drawable.studyarea_lb
+                    : R.drawable.studyarea_focus;
+        } else{
             // Cat theme — pick dark or light variant based on system setting
             boolean isDark = (getResources().getConfiguration().uiMode
                     & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
