@@ -1,5 +1,6 @@
 package com.example.mpproject.presentation.view;
 
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -94,19 +95,33 @@ public class TimerFragment extends Fragment {
 
     private void updateBackground(int mode, String theme) {
         int resId;
+
         if (theme.equals("Snoopy")) {
             resId = mode == PomodoroViewModel.MODE_SHORT_BREAK ? R.drawable.snoopy_sb
                     : mode == PomodoroViewModel.MODE_LONG_BREAK  ? R.drawable.snoopy_lb
                     : R.drawable.snoopy_focus;
-        } else if (theme.equals("Cat - Dark Mode")) {
-            resId = mode == PomodoroViewModel.MODE_SHORT_BREAK ? R.drawable.dmlogo_sb
-                    : mode == PomodoroViewModel.MODE_LONG_BREAK  ? R.drawable.dmlogo_lb
-                    : R.drawable.dmlogo_focus;
+
+        } else if (theme.equals("Study Space")) {
+            resId = mode == PomodoroViewModel.MODE_SHORT_BREAK ? R.drawable.studyarea_sb
+                    : mode == PomodoroViewModel.MODE_LONG_BREAK  ? R.drawable.studyarea_lb
+                    : R.drawable.studyarea_focus;
+
         } else {
-            resId = mode == PomodoroViewModel.MODE_SHORT_BREAK ? R.drawable.lmlogo_sb
-                    : mode == PomodoroViewModel.MODE_LONG_BREAK  ? R.drawable.lmlogo_lb
-                    : R.drawable.lmlogo_focus;
+            // Cat theme — auto pick dark or light based on system setting
+            boolean isDark = (getResources().getConfiguration().uiMode
+                    & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
+
+            if (isDark) {
+                resId = mode == PomodoroViewModel.MODE_SHORT_BREAK ? R.drawable.dmlogo_sb
+                        : mode == PomodoroViewModel.MODE_LONG_BREAK  ? R.drawable.dmlogo_lb
+                        : R.drawable.dmlogo_focus;
+            } else {
+                resId = mode == PomodoroViewModel.MODE_SHORT_BREAK ? R.drawable.lmlogo_sb
+                        : mode == PomodoroViewModel.MODE_LONG_BREAK  ? R.drawable.lmlogo_lb
+                        : R.drawable.lmlogo_focus;
+            }
         }
+
         imgBackground.setImageResource(resId);
     }
 

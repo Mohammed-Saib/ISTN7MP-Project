@@ -19,7 +19,7 @@ public class PomodoroPreferences {
             prefs.getInt("short", 5),
             prefs.getInt("long", 15),
             prefs.getInt("sessions", 4),
-            prefs.getString("theme", "Default" )
+            prefs.getString("theme", "Cat" )
         );
     }
 

@@ -101,23 +101,23 @@
         android:layout_marginBottom="24dp">
 
         <RadioButton
-            android:id="@+id/radioCat_lm"
+            android:id="@+id/radioCat"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Cat - Light Mode"
+            android:text="Cat"
             android:checked="true" />
-
-        <RadioButton
-            android:id="@+id/radioCat_dm"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Cat - Dark Mode" />
 
         <RadioButton
             android:id="@+id/radioSnoopy"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Snoopy" />
+            android:text="Snoppy" />
+
+        <RadioButton
+            android:id="@+id/radioStudy"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Study Space" />
 
     </RadioGroup>
 

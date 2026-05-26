@@ -100,9 +100,9 @@ public class TimerSettingFragment extends DialogFragment {
 
         // Set correct radio button
         switch (currentSettings.theme) {
-            case "Snoopy": radioTheme.check(R.id.radioSnoopy); break;
-            case "Cat - Dark Mode":  radioTheme.check(R.id.radioCat_dm);  break;
-            default:       radioTheme.check(R.id.radioCat_lm); break;
+            case "Snoopy":    radioTheme.check(R.id.radioSnoopy);    break;
+            case "Study Space":  radioTheme.check(R.id.radioStudy);  break;
+            default:          radioTheme.check(R.id.radioCat);        break; // or hide/remove this
         }
 
         // Live label updates as seekbars move
@@ -145,10 +145,10 @@ public class TimerSettingFragment extends DialogFragment {
             int longVal     = Math.max(seekLong.getProgress(),     1);
             int sessionVal  = Math.max(seekSessions.getProgress(), 1);
 
-            String theme = "Cat - Light Mode";   // default if radioCat_lm is checked
+            String theme = "Cat";   // default if radioCat is checked
             int checkedId = radioTheme.getCheckedRadioButtonId();
             if      (checkedId == R.id.radioSnoopy)  theme = "Snoopy";
-            else if (checkedId == R.id.radioCat_dm)  theme = "Cat - Dark Mode";
+            else if (checkedId == R.id.radioStudy)  theme = "Study Space";
 
             PomodoroSettings newSettings = new PomodoroSettings(
                     focusVal, shortVal, longVal, sessionVal, theme);
