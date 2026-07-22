@@ -1,7 +1,5 @@
 package com.example.mpproject.data.repository;
 
-import android.util.Log;
-
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Transformations;
 
@@ -10,56 +8,31 @@ import com.example.mpproject.data.local.dao.ModuleDao;
 import com.example.mpproject.data.local.entity.ModuleEntity;
 import com.example.mpproject.domain.model.Module;
 import com.example.mpproject.domain.repository.ModuleRepository;
-import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-// [Data] Implements ModuleRepository. Room is the source of truth; Firestore is synced in the background.
 public class ModuleRepositoryImpl implements ModuleRepository {
 
-    private static final String TAG = "ModuleRepository";
-
     private final ModuleDao moduleDao;
-    private final FirebaseFirestore firestore;
 
     public ModuleRepositoryImpl(ModuleDao moduleDao) {
         this.moduleDao = moduleDao;
-        this.firestore = FirebaseFirestore.getInstance();
     }
 
     @Override
     public void insert(Module module) {
-        AppDatabase.databaseWriteExecutor.execute(() -> {
-            moduleDao.insert(toEntity(module));
-            syncToFirestore(module);
-        });
+        AppDatabase.databaseWriteExecutor.execute(() -> moduleDao.insert(toEntity(module)));
     }
 
     @Override
     public void update(Module module) {
-        AppDatabase.databaseWriteExecutor.execute(() -> {
-            moduleDao.update(toEntity(module));
-            syncToFirestore(module);
-        });
+        AppDatabase.databaseWriteExecutor.execute(() -> moduleDao.update(toEntity(module)));
     }
 
     @Override
     public void delete(Module module) {
-        AppDatabase.databaseWriteExecutor.execute(() -> {
-            moduleDao.delete(toEntity(module));
-            // Remove from Firestore; ignore failures (can be retried on next sync)
-            try {
-                firestore.collection("users").document(module.getUserId())
-                        .collection("modules").document(module.getModuleId())
-                        .delete()
-                        .addOnFailureListener(e -> Log.e(TAG, "Firestore delete failed", e));
-            } catch (Exception e) {
-                Log.e(TAG, "Firestore delete error", e);
-            }
-        });
+        AppDatabase.databaseWriteExecutor.execute(() -> moduleDao.delete(toEntity(module)));
     }
 
     @Override
@@ -80,74 +53,6 @@ public class ModuleRepositoryImpl implements ModuleRepository {
     @Override
     public LiveData<List<Module>> getArchivedByUser(String userId) {
         return Transformations.map(moduleDao.getArchivedByUser(userId), this::toDomainList);
-    }
-
-    // Unconditional merge-sync from Firestore: fetches every module for this user and upserts into Room.
-    // Because ModuleDao uses OnConflictStrategy.REPLACE, existing records are refreshed and new ones
-    // (added on another device) are inserted. Local-only records are never deleted.
-    public void syncFromFirestore(String userId) {
-        syncFromFirestore(userId, null);
-    }
-
-    // Variant that fires onModulesSynced after all module rows are committed to Room.
-    // Use this to chain syncs that FK-depend on modules (assessments, module notes).
-    public void syncFromFirestore(String userId, @androidx.annotation.Nullable Runnable onModulesSynced) {
-        firestore.collection("users").document(userId)
-                .collection("modules")
-                .get()
-                .addOnSuccessListener(snap ->
-                        AppDatabase.databaseWriteExecutor.execute(() -> {
-                            for (com.google.firebase.firestore.DocumentSnapshot doc : snap.getDocuments()) {
-                                try {
-                                    ModuleEntity e = new ModuleEntity();
-                                    e.setModuleId(doc.getId());
-                                    e.setUserId(userId);
-                                    e.setName(doc.getString("name"));
-                                    e.setModuleCode(doc.getString("moduleCode"));
-                                    e.setLecturerName(doc.getString("lecturerName"));
-                                    e.setLecturerEmail(doc.getString("lecturerEmail"));
-                                    e.setLecturerOfficeHours(doc.getString("lecturerOfficeHours"));
-                                    e.setColor(doc.getString("color"));
-                                    e.setSemester(doc.getString("semester"));
-                                    Boolean archived = doc.getBoolean("isArchived");
-                                    e.setArchived(archived != null && archived);
-                                    Long createdAt = doc.getLong("createdAt");
-                                    e.setCreatedAt(createdAt != null ? createdAt : 0L);
-                                    Long updatedAt = doc.getLong("updatedAt");
-                                    e.setUpdatedAt(updatedAt != null ? updatedAt : 0L);
-                                    moduleDao.insert(e);
-                                } catch (Exception ex) {
-                                    Log.e(TAG, "Error syncing module from Firestore", ex);
-                                }
-                            }
-                            if (onModulesSynced != null) onModulesSynced.run();
-                        }))
-                .addOnFailureListener(e -> Log.e(TAG, "Firestore module sync failed", e));
-    }
-
-    // Push module data to users/{userId}/modules/{moduleId} in Firestore
-    private void syncToFirestore(Module module) {
-        try {
-            Map<String, Object> data = new HashMap<>();
-            data.put("userId", module.getUserId());
-            data.put("name", module.getName());
-            data.put("moduleCode", module.getModuleCode());
-            data.put("lecturerName", module.getLecturerName());
-            data.put("lecturerEmail", module.getLecturerEmail());
-            data.put("lecturerOfficeHours", module.getLecturerOfficeHours());
-            data.put("color", module.getColor());
-            data.put("semester", module.getSemester());
-            data.put("isArchived", module.isArchived());
-            data.put("createdAt", module.getCreatedAt());
-            data.put("updatedAt", module.getUpdatedAt());
-
-            firestore.collection("users").document(module.getUserId())
-                    .collection("modules").document(module.getModuleId())
-                    .set(data)
-                    .addOnFailureListener(e -> Log.e(TAG, "Firestore sync failed", e));
-        } catch (Exception e) {
-            Log.e(TAG, "Firestore sync error", e);
-        }
     }
 
     private Module toDomain(ModuleEntity e) {
