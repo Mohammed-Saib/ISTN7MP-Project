@@ -1,126 +1,115 @@
 package com.example.mpproject.data.repository;
 
+import android.content.Context;
 import android.util.Log;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import com.example.mpproject.data.local.AppDatabase;
+import com.example.mpproject.data.local.LocalSessionManager;
+import com.example.mpproject.data.local.dao.UserDao;
+import com.example.mpproject.data.local.entity.UserEntity;
 import com.example.mpproject.domain.repository.AuthRepository;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
-import com.google.firebase.auth.FirebaseAuthInvalidUserException;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.auth.UserProfileChangeRequest;
-import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
-// [Data] Implements AuthRepository using Firebase Auth and Firestore.
 public class AuthRepositoryImpl implements AuthRepository {
 
     private static final String TAG = "AuthRepository";
-    private final FirebaseAuth firebaseAuth;
-    private final FirebaseFirestore firestore;
-    private final MutableLiveData<FirebaseUser> userLiveData;
+    private final UserDao userDao;
+    private final Context context;
     private final MutableLiveData<String> errorLiveData;
 
-    public AuthRepositoryImpl() {
-        this.firebaseAuth = FirebaseAuth.getInstance();
-        this.firestore = FirebaseFirestore.getInstance();
-        this.userLiveData = new MutableLiveData<>();
+    public AuthRepositoryImpl(Context context) {
+        this.context = context.getApplicationContext();
+        AppDatabase db = AppDatabase.getDatabase(this.context);
+        this.userDao = db.userDao();
         this.errorLiveData = new MutableLiveData<>();
-        
-        if (firebaseAuth.getCurrentUser() != null) {
-            userLiveData.setValue(firebaseAuth.getCurrentUser());
-        }
     }
 
     @Override
-    public LiveData<FirebaseUser> register(String email, String password, String firstName, String lastName, String username, String school) {
-        userLiveData.setValue(null);
+    public LiveData<UserEntity> register(String email, String password, String firstName, String lastName, String username, String school) {
+        MutableLiveData<UserEntity> userLiveData = new MutableLiveData<>();
         errorLiveData.setValue(null);
 
-        firebaseAuth.createUserWithEmailAndPassword(email, password)
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        Log.d(TAG, "Auth user created successfully");
-                        FirebaseUser user = firebaseAuth.getCurrentUser();
-                        if (user != null) {
-                            String fullName = firstName + " " + lastName;
-                            UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
-                                    .setDisplayName(fullName)
-                                    .build();
-                            
-                            user.updateProfile(profileUpdates).addOnCompleteListener(profileTask -> {
-                                if (profileTask.isSuccessful()) {
-                                    Log.d(TAG, "User profile updated in Auth");
-                                } else {
-                                    Log.e(TAG, "Profile update failed", profileTask.getException());
-                                }
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            UserEntity existing = userDao.getByEmailSync(email);
+            if (existing != null) {
+                errorLiveData.postValue("An account with this email already exists.");
+                return;
+            }
 
-                                Map<String, Object> userData = new HashMap<>();
-                                userData.put("firstName", firstName);
-                                userData.put("lastName", lastName);
-                                userData.put("username", username);
-                                userData.put("email", email);
-                                userData.put("school", school);
-                                userData.put("dateJoined", System.currentTimeMillis());
-                                
-                                Log.d(TAG, "Attempting to write to Firestore...");
-                                firestore.collection("users").document(user.getUid())
-                                        .set(userData)
-                                        .addOnCompleteListener(firestoreTask -> {
-                                            if (firestoreTask.isSuccessful()) {
-                                                Log.d(TAG, "Firestore document created");
-                                                userLiveData.setValue(user);
-                                            } else {
-                                                Log.e(TAG, "Firestore write failed", firestoreTask.getException());
-                                                errorLiveData.setValue("Registration failed. Please try again.");
-                                            }
-                                        });
-                            });
-                        }
-                    } else {
-                        Log.e(TAG, "Auth creation failed", task.getException());
-                        errorLiveData.setValue("Registration failed. Please check your details.");
-                    }
-                });
+            String userId = UUID.randomUUID().toString();
+            String hashedPassword = hashPassword(password);
+            long now = System.currentTimeMillis();
+
+            UserEntity user = new UserEntity(userId, username, firstName, lastName, email, hashedPassword, now);
+            userDao.insert(user);
+
+            LocalSessionManager.setCurrentUserId(context, userId);
+            userLiveData.postValue(user);
+        });
+
         return userLiveData;
     }
 
     @Override
-    public LiveData<FirebaseUser> login(String email, String password) {
-        userLiveData.setValue(null);
+    public LiveData<UserEntity> login(String email, String password) {
+        MutableLiveData<UserEntity> userLiveData = new MutableLiveData<>();
         errorLiveData.setValue(null);
-        firebaseAuth.signInWithEmailAndPassword(email, password)
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        userLiveData.setValue(firebaseAuth.getCurrentUser());
-                    } else {
-                        Exception e = task.getException();
-                        if (e instanceof FirebaseAuthInvalidUserException) {
-                            errorLiveData.setValue("No account found with this email.");
-                        } else if (e instanceof FirebaseAuthInvalidCredentialsException) {
-                            errorLiveData.setValue("Incorrect email or password.");
-                        } else {
-                            Log.e(TAG, "Login failed", e);
-                            errorLiveData.setValue("Login failed. Please try again.");
-                        }
-                    }
-                });
+
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            UserEntity user = userDao.loginSync(email, hashPassword(password));
+            if (user != null) {
+                LocalSessionManager.setCurrentUserId(context, user.getUserId());
+                userLiveData.postValue(user);
+            } else {
+                UserEntity existingByEmail = userDao.getByEmailSync(email);
+                if (existingByEmail == null) {
+                    errorLiveData.postValue("No account found with this email.");
+                } else {
+                    errorLiveData.postValue("Incorrect email or password.");
+                }
+            }
+        });
+
         return userLiveData;
     }
 
     @Override
     public void logout() {
-        firebaseAuth.signOut();
-        userLiveData.setValue(null);
+        LocalSessionManager.clearSession(context);
     }
 
     @Override
-    public FirebaseUser getCurrentUser() {
-        return firebaseAuth.getCurrentUser();
+    public UserEntity getCurrentUser() {
+        String userId = LocalSessionManager.getCurrentUserId(context);
+        if (userId == null) return null;
+
+        try {
+            final UserEntity[] result = new UserEntity[1];
+            final Object lock = new Object();
+
+            AppDatabase.databaseWriteExecutor.execute(() -> {
+                result[0] = userDao.getByEmailSync(null);
+                synchronized (lock) { lock.notifyAll(); }
+            });
+
+            // For synchronous access, query directly on current thread
+            // This is acceptable for session checks at app startup
+            synchronized (lock) {
+                try { lock.wait(2000); } catch (InterruptedException ignored) {}
+            }
+
+            return result[0];
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     @Override
@@ -131,66 +120,89 @@ public class AuthRepositoryImpl implements AuthRepository {
     @Override
     public LiveData<Boolean> resetPassword(String email) {
         MutableLiveData<Boolean> success = new MutableLiveData<>();
-        firebaseAuth.sendPasswordResetEmail(email)
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        success.setValue(true);
-                    } else {
-                        Log.e(TAG, "Password reset failed", task.getException());
-                        errorLiveData.setValue("Failed to send reset email. Please try again.");
-                        success.setValue(false);
-                    }
-                });
+        errorLiveData.setValue(null);
+
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            UserEntity user = userDao.getByEmailSync(email);
+            if (user == null) {
+                errorLiveData.postValue("No account found with this email.");
+                success.postValue(false);
+            } else {
+                success.postValue(true);
+            }
+        });
+
         return success;
     }
 
     @Override
     public LiveData<Boolean> updateUserProfile(String firstName, String lastName, String username, String school) {
         MutableLiveData<Boolean> success = new MutableLiveData<>();
-        FirebaseUser user = firebaseAuth.getCurrentUser();
-        if (user != null) {
-            String fullName = firstName + " " + lastName;
-            UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
-                    .setDisplayName(fullName)
-                    .build();
-            
-            user.updateProfile(profileUpdates).addOnCompleteListener(task -> {
-                Map<String, Object> updates = new HashMap<>();
-                updates.put("firstName", firstName);
-                updates.put("lastName", lastName);
-                updates.put("username", username);
-                updates.put("school", school);
+        String userId = LocalSessionManager.getCurrentUserId(context);
 
-                firestore.collection("users").document(user.getUid())
-                        .update(updates)
-                        .addOnCompleteListener(updateTask -> {
-                            if (updateTask.isSuccessful()) {
-                                success.setValue(true);
-                                userLiveData.setValue(user); // Trigger update
-                            } else {
-                                errorLiveData.setValue("Failed to update profile data");
-                                success.setValue(false);
-                            }
-                        });
-            });
+        if (userId == null) {
+            errorLiveData.setValue("No user logged in.");
+            success.setValue(false);
+            return success;
         }
+
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            userDao.updateProfile(userId, firstName, lastName, username);
+            success.postValue(true);
+        });
+
         return success;
     }
 
     @Override
     public LiveData<Map<String, Object>> getUserData(String uid) {
         MutableLiveData<Map<String, Object>> userData = new MutableLiveData<>();
-        firestore.collection("users").document(uid)
-                .get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
-                        userData.setValue(documentSnapshot.getData());
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "getUserData failed", e);
-                    errorLiveData.setValue("Failed to load profile data.");
+
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            LiveData<UserEntity> liveUser = userDao.getById(uid);
+            // Use a synchronous approach for the one-shot read
+            // We observe on a background thread and post result
+            try {
+                final UserEntity[] holder = new UserEntity[1];
+                final Object lock = new Object();
+
+                liveUser.observeForever(entity -> {
+                    holder[0] = entity;
+                    synchronized (lock) { lock.notifyAll(); }
                 });
+
+                synchronized (lock) { lock.wait(2000); }
+
+                if (holder[0] != null) {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("firstName", holder[0].getFirstName());
+                    map.put("lastName", holder[0].getLastName());
+                    map.put("username", holder[0].getUsername());
+                    map.put("email", holder[0].getEmail());
+                    map.put("dateJoined", holder[0].getDateJoined());
+                    userData.postValue(map);
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "getUserData failed", e);
+            }
+        });
+
         return userData;
+    }
+
+    private String hashPassword(String password) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(password.getBytes());
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) hexString.append('0');
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException e) {
+            return password;
+        }
     }
 }
