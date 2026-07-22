@@ -56,7 +56,7 @@ public class RegisterFragment extends Fragment {
 
         applyAuthLogo(view);
 
-        ViewModelFactory factory = new ViewModelFactory(new AuthRepositoryImpl());
+        ViewModelFactory factory = new ViewModelFactory(new AuthRepositoryImpl(requireContext()));
         authViewModel = new ViewModelProvider(this, factory).get(AuthViewModel.class);
 
         binding.registerButton.setOnClickListener(v -> performRegistration());

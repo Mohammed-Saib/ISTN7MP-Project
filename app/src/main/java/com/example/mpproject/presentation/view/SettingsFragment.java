@@ -17,13 +17,13 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
 
 import com.example.mpproject.R;
+import com.example.mpproject.data.local.entity.UserEntity;
 import com.example.mpproject.data.repository.AuthRepositoryImpl;
 import com.example.mpproject.databinding.FragmentSettingsBinding;
 import com.example.mpproject.presentation.viewmodel.AuthViewModel;
 import com.example.mpproject.presentation.viewmodel.ViewModelFactory;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
-import com.google.firebase.auth.FirebaseUser;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -47,7 +47,7 @@ public class SettingsFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        ViewModelFactory factory = new ViewModelFactory(new AuthRepositoryImpl());
+        ViewModelFactory factory = new ViewModelFactory(new AuthRepositoryImpl(requireContext()));
         authViewModel = new ViewModelProvider(this, factory).get(AuthViewModel.class);
 
         loadUserProfile();
@@ -100,11 +100,11 @@ public class SettingsFragment extends Fragment {
     }
 
     private void loadUserProfile() {
-        FirebaseUser user = authViewModel.getCurrentUser();
+        UserEntity user = authViewModel.getCurrentUser();
         if (user == null) return;
 
         binding.profileProgressBar.setVisibility(View.VISIBLE);
-        authViewModel.getUserData(user.getUid()).observe(getViewLifecycleOwner(), data -> {
+        authViewModel.getUserData(user.getUserId()).observe(getViewLifecycleOwner(), data -> {
             if (binding == null) return;
             binding.profileProgressBar.setVisibility(View.GONE);
             if (data != null) {
@@ -168,7 +168,7 @@ public class SettingsFragment extends Fragment {
     }
 
     private void resetPassword() {
-        FirebaseUser user = authViewModel.getCurrentUser();
+        UserEntity user = authViewModel.getCurrentUser();
         if (user != null && user.getEmail() != null) {
             authViewModel.resetPassword(user.getEmail()).observe(getViewLifecycleOwner(), success -> {
                 if (success != null && success) {

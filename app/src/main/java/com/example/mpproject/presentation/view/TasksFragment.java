@@ -17,6 +17,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.example.mpproject.R;
 import com.example.mpproject.data.local.AppDatabase;
+import com.example.mpproject.data.local.LocalSessionManager;
 import com.example.mpproject.data.repository.ModuleRepositoryImpl;
 import com.example.mpproject.data.repository.TodoRepositoryImpl;
 import com.example.mpproject.databinding.FragmentTasksBinding;
@@ -70,9 +71,11 @@ public class TasksFragment extends Fragment implements TaskAdapter.OnTaskClickLi
         binding.tasksRecyclerView.setAdapter(taskAdapter);
 
         AppDatabase db = AppDatabase.getDatabase(requireContext());
+        String userId = LocalSessionManager.getCurrentUserId(requireContext());
         TaskViewModelFactory factory = new TaskViewModelFactory(
                 new TodoRepositoryImpl(db.todoDao()),
-                new ModuleRepositoryImpl(db.moduleDao()));
+                new ModuleRepositoryImpl(db.moduleDao()),
+                userId);
         taskViewModel = new ViewModelProvider(this, factory).get(TaskViewModel.class);
 
         observeList(taskViewModel.allTodos);

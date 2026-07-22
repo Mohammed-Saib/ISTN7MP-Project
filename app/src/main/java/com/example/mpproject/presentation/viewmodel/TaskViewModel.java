@@ -9,7 +9,6 @@ import com.example.mpproject.domain.model.Module;
 import com.example.mpproject.domain.model.Todo;
 import com.example.mpproject.domain.repository.ModuleRepository;
 import com.example.mpproject.domain.repository.TodoRepository;
-import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -32,11 +31,9 @@ public class TaskViewModel extends ViewModel {
 
     private final MutableLiveData<Todo> editingTodo = new MutableLiveData<>(null);
 
-    public TaskViewModel(TodoRepository todoRepository, ModuleRepository moduleRepository) {
+    public TaskViewModel(TodoRepository todoRepository, ModuleRepository moduleRepository, String userId) {
         this.todoRepository = todoRepository;
-
-        FirebaseAuth auth = FirebaseAuth.getInstance();
-        this.userId = auth.getCurrentUser() != null ? auth.getCurrentUser().getUid() : "";
+        this.userId = userId != null ? userId : "";
 
         allTodos = todoRepository.getAllByUser(userId);
 

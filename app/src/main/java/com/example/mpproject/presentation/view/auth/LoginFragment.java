@@ -23,14 +23,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
 
 import com.example.mpproject.R;
-import com.example.mpproject.data.local.AppDatabase;
-import com.example.mpproject.data.repository.AssessmentRepositoryImpl;
 import com.example.mpproject.data.repository.AuthRepositoryImpl;
-import com.example.mpproject.data.repository.CalendarEventRepositoryImpl;
-import com.example.mpproject.data.repository.ModuleNoteRepositoryImpl;
-import com.example.mpproject.data.repository.ModuleRepositoryImpl;
-import com.example.mpproject.data.repository.PersonalNoteRepositoryImpl;
-import com.example.mpproject.data.repository.TodoRepositoryImpl;
 import com.example.mpproject.databinding.FragmentLoginBinding;
 import com.example.mpproject.presentation.viewmodel.AuthViewModel;
 import com.example.mpproject.presentation.viewmodel.ViewModelFactory;
@@ -69,7 +62,7 @@ public class LoginFragment extends Fragment {
 
         applyAuthLogo(view);
 
-        ViewModelFactory factory = new ViewModelFactory(new AuthRepositoryImpl());
+        ViewModelFactory factory = new ViewModelFactory(new AuthRepositoryImpl(requireContext()));
         authViewModel = new ViewModelProvider(this, factory).get(AuthViewModel.class);
 
         binding.loginButton.setOnClickListener(v -> performLogin());
@@ -121,18 +114,6 @@ public class LoginFragment extends Fragment {
                         .getSharedPreferences("app_prefs", Context.MODE_PRIVATE);
                 prefs.edit().putBoolean("pref_remember_me", rememberMe).apply();
 
-                // Unconditional merge-sync from Firestore so data added on other devices appears here.
-                // All FK children sync only after modules are committed to Room — Room enforces
-                // PRAGMA foreign_keys = ON so inserts with a non-null moduleId fail silently
-                // if the parent module row isn't present yet.
-                AppDatabase db = AppDatabase.getDatabase(requireContext());
-                new ModuleRepositoryImpl(db.moduleDao()).syncFromFirestore(user.getUid(), () -> {
-                    new AssessmentRepositoryImpl(db.assessmentDao()).syncFromFirestore(user.getUid());
-                    new ModuleNoteRepositoryImpl(db.moduleNoteDao()).syncFromFirestore(user.getUid());
-                    new PersonalNoteRepositoryImpl(db.personalNoteDao()).syncFromFirestore(user.getUid());
-                    new TodoRepositoryImpl(db.todoDao()).syncFromFirestore(user.getUid());
-                    new CalendarEventRepositoryImpl(db.calendarEventDao()).syncFromFirestore(user.getUid());
-                });
                 Navigation.findNavController(requireView())
                         .navigate(R.id.action_loginFragment_to_homeFragment);
             }

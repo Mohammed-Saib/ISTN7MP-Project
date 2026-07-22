@@ -7,15 +7,16 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.mpproject.domain.repository.ModuleRepository;
 import com.example.mpproject.domain.repository.TodoRepository;
 
-// [ViewModel] Factory for TaskViewModel — injects TodoRepository and ModuleRepository.
 public class TaskViewModelFactory implements ViewModelProvider.Factory {
 
     private final TodoRepository todoRepository;
     private final ModuleRepository moduleRepository;
+    private final String userId;
 
-    public TaskViewModelFactory(TodoRepository todoRepository, ModuleRepository moduleRepository) {
+    public TaskViewModelFactory(TodoRepository todoRepository, ModuleRepository moduleRepository, String userId) {
         this.todoRepository = todoRepository;
         this.moduleRepository = moduleRepository;
+        this.userId = userId;
     }
 
     @NonNull
@@ -23,7 +24,7 @@ public class TaskViewModelFactory implements ViewModelProvider.Factory {
     @SuppressWarnings("unchecked")
     public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
         if (modelClass.isAssignableFrom(TaskViewModel.class)) {
-            return (T) new TaskViewModel(todoRepository, moduleRepository);
+            return (T) new TaskViewModel(todoRepository, moduleRepository, userId);
         }
         throw new IllegalArgumentException("Unknown ViewModel: " + modelClass.getName());
     }

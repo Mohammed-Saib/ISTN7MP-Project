@@ -25,8 +25,7 @@ import com.example.mpproject.presentation.adapter.CalendarGridAdapter;
 import com.example.mpproject.presentation.view.calendar.EventBottomSheetFragment;
 import com.example.mpproject.presentation.viewmodel.CalendarViewModel;
 import com.example.mpproject.presentation.viewmodel.CalendarViewModelFactory;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
+import com.example.mpproject.data.local.LocalSessionManager;
 
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -73,8 +72,8 @@ public class CalendarFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) return; // auth guard — MainActivity redirects if not signed in
+        String userId = LocalSessionManager.getCurrentUserId(requireContext());
+        if (userId == null) return; // auth guard — MainActivity redirects if not signed in
 
         // Build repositories from the shared AppDatabase singleton
         AppDatabase db = AppDatabase.getDatabase(requireContext());
@@ -82,7 +81,7 @@ public class CalendarFragment extends Fragment {
                 new CalendarEventRepositoryImpl(db.calendarEventDao()),
                 new TodoRepositoryImpl(db.todoDao()),
                 new ModuleRepositoryImpl(db.moduleDao()),
-                user.getUid());
+                userId);
 
         viewModel = new ViewModelProvider(this, factory).get(CalendarViewModel.class);
 

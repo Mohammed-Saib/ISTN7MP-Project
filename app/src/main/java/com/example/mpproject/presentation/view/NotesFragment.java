@@ -76,10 +76,9 @@ import com.example.mpproject.data.repository.NoteFolderRepositoryImpl;
 import com.example.mpproject.domain.model.NoteFolder;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
-import com.google.firebase.storage.StorageMetadata;
+import com.example.mpproject.data.local.LocalSessionManager;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import android.content.res.Configuration;
 
@@ -157,9 +156,7 @@ public class NotesFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        String userId = FirebaseAuth.getInstance().getCurrentUser() != null
-                ? FirebaseAuth.getInstance().getCurrentUser().getUid()
-                : null;
+        String userId = LocalSessionManager.getCurrentUserId(requireContext());
         if (userId == null) {
             Toast.makeText(requireContext(), "Please log in first", Toast.LENGTH_SHORT).show();
             return;
@@ -2366,15 +2363,15 @@ public class NotesFragment extends Fragment {
         return null;
     }
 
-    private void safelyDeleteStorageFile(StorageReference ref) {
-        if (ref == null) return;
+    private void safelyDeleteLocalFile(String filePath) {
+        if (filePath == null || filePath.trim().isEmpty()) return;
 
         try {
-            ref.delete().addOnFailureListener(e -> {
-                // Ignore cleanup failure. The important thing is that the app stays safe.
-            });
+            File file = new File(filePath);
+            if (file.exists()) {
+                file.delete();
+            }
         } catch (Exception ignored) {
-            // Ignore cleanup failure.
         }
     }
 
@@ -2391,7 +2388,6 @@ public class NotesFragment extends Fragment {
         }
 
         ModuleNote note = null;
-        StorageReference ref = null;
 
         try {
             String fileName = getFileName(fileUri);
@@ -2408,69 +2404,47 @@ public class NotesFragment extends Fragment {
             );
 
             String safeFileName = sanitizeFileName(fileName);
+            String userId = note.getUserId();
 
-            ref = FirebaseStorage.getInstance()
-                    .getReference()
-                    .child("users")
-                    .child(note.getUserId())
-                    .child("module_notes")
-                    .child(pendingUploadModuleId)
-                    .child(note.getNoteId() + "_" + safeFileName);
+            InputStream inputStream = requireContext().getContentResolver().openInputStream(fileUri);
+            if (inputStream == null) {
+                viewModel.markModuleNoteFailed(note);
+                safeToast("Could not read the selected file.", Toast.LENGTH_LONG);
+                return;
+            }
 
-            StorageReference finalRef = ref;
-            ModuleNote finalNote = note;
+            File localFile = new File(requireContext().getFilesDir(),
+                    "module_notes/" + userId + "/" + pendingUploadModuleId + "/" + note.getNoteId() + "_" + safeFileName);
+            localFile.getParentFile().mkdirs();
 
-            StorageMetadata metadata = new StorageMetadata.Builder()
-                    .setContentType(fileType == null || fileType.trim().isEmpty()
-                            ? "application/octet-stream"
-                            : fileType)
-                    .build();
+            FileOutputStream outputStream = new FileOutputStream(localFile);
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, bytesRead);
+            }
+            outputStream.close();
+            inputStream.close();
 
-            ref.putFile(fileUri, metadata)
-                    .continueWithTask(task -> {
-                        if (!task.isSuccessful()) {
-                            Exception exception = task.getException();
-                            if (exception != null) throw exception;
-                            throw new Exception("Upload failed for an unknown reason.");
-                        }
-                        return finalRef.getDownloadUrl();
-                    })
-                    .addOnSuccessListener(uri -> {
-                        if (!isAdded()) return;
+            String localPath = localFile.getAbsolutePath();
 
-                        viewModel.markModuleNoteUploaded(finalNote, uri.toString());
-                        pendingUploadTitle = null;
-                        pendingUploadModuleId = null;
-                        pendingUploadFolderId = null;
+            viewModel.markModuleNoteUploaded(note, localPath);
+            pendingUploadTitle = null;
+            pendingUploadModuleId = null;
+            pendingUploadFolderId = null;
 
-                        safeToast("File uploaded", Toast.LENGTH_SHORT);
-                    })
-                    .addOnFailureListener(e -> {
-                        if (isAdded()) {
-                            viewModel.markModuleNoteFailed(finalNote);
-                        }
-
-                        safelyDeleteStorageFile(finalRef);
-
-
-                        String message = e.getMessage() == null
-                                ? "Upload failed. Please try again."
-                                : "Upload failed: " + e.getMessage();
-
-                        safeToast(message, Toast.LENGTH_LONG);
-                    });
+            safeToast("File saved locally", Toast.LENGTH_SHORT);
 
         } catch (Exception e) {
             if (note != null && isAdded()) {
                 viewModel.markModuleNoteFailed(note);
             }
 
-            safelyDeleteStorageFile(ref);
             pendingUploadFolderId = null;
 
             String message = e.getMessage() == null
-                    ? "Could not start upload. Please try again."
-                    : "Could not start upload: " + e.getMessage();
+                    ? "Could not save file. Please try again."
+                    : "Could not save file: " + e.getMessage();
 
             safeToast(message, Toast.LENGTH_LONG);
         }
@@ -2488,7 +2462,6 @@ public class NotesFragment extends Fragment {
         }
 
         PersonalNoteAttachment attachment = null;
-        StorageReference ref = null;
 
         try {
             String fileName = getFileName(fileUri);
@@ -2508,9 +2481,7 @@ public class NotesFragment extends Fragment {
 
             String safeFileName = sanitizeFileName(fileName);
 
-            String userId = FirebaseAuth.getInstance().getCurrentUser() != null
-                    ? FirebaseAuth.getInstance().getCurrentUser().getUid()
-                    : null;
+            String userId = LocalSessionManager.getCurrentUserId(requireContext());
 
             if (userId == null || userId.trim().isEmpty()) {
                 viewModel.markPersonalAttachmentFailed(attachment);
@@ -2518,69 +2489,52 @@ public class NotesFragment extends Fragment {
                 return;
             }
 
-            String storagePath = "users/" + userId + "/personal_note_attachments/"
+            String storagePath = "personal_note_attachments/"
                     + activeAttachmentNoteId + "/"
                     + attachment.getAttachmentId() + "_" + safeFileName;
 
-            ref = FirebaseStorage.getInstance().getReference().child(storagePath);
+            InputStream inputStream = requireContext().getContentResolver().openInputStream(fileUri);
+            if (inputStream == null) {
+                viewModel.markPersonalAttachmentFailed(attachment);
+                safeToast("Could not read the selected file.", Toast.LENGTH_LONG);
+                return;
+            }
 
-            StorageMetadata metadata = new StorageMetadata.Builder()
-                    .setContentType(fileType == null || fileType.trim().isEmpty()
-                            ? "application/octet-stream"
-                            : fileType)
-                    .build();
+            File localFile = new File(requireContext().getFilesDir(),
+                    "personal_attachments/" + userId + "/" + activeAttachmentNoteId + "/" + attachment.getAttachmentId() + "_" + safeFileName);
+            localFile.getParentFile().mkdirs();
 
-            StorageReference finalRef = ref;
-            PersonalNoteAttachment finalAttachment = attachment;
+            FileOutputStream outputStream = new FileOutputStream(localFile);
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, bytesRead);
+            }
+            outputStream.close();
+            inputStream.close();
 
-            ref.putFile(fileUri, metadata)
-                    .continueWithTask(task -> {
-                        if (!task.isSuccessful()) {
-                            Exception exception = task.getException();
-                            if (exception != null) throw exception;
-                            throw new Exception("Attachment upload failed for an unknown reason.");
-                        }
-                        return finalRef.getDownloadUrl();
-                    })
-                    .addOnSuccessListener(uri -> {
-                        if (!isAdded()) return;
+            String localPath = localFile.getAbsolutePath();
 
-                        viewModel.markPersonalAttachmentUploaded(
-                                finalAttachment,
-                                storagePath,
-                                uri.toString()
-                        );
+            viewModel.markPersonalAttachmentUploaded(
+                    attachment,
+                    storagePath,
+                    localPath
+            );
 
-                        finalAttachment.setStoragePath(storagePath);
-                        finalAttachment.setDownloadUrl(uri.toString());
-                        finalAttachment.setUploadStatus("DONE");
+            attachment.setStoragePath(storagePath);
+            attachment.setDownloadUrl(localPath);
+            attachment.setUploadStatus("DONE");
 
-                        safeToast("Attachment uploaded", Toast.LENGTH_SHORT);
-                    })
-                    .addOnFailureListener(e -> {
-                        if (isAdded()) {
-                            viewModel.markPersonalAttachmentFailed(finalAttachment);
-                        }
-
-                        safelyDeleteStorageFile(finalRef);
-
-                        String message = e.getMessage() == null
-                                ? "Attachment upload failed. Please try again."
-                                : "Attachment upload failed: " + e.getMessage();
-
-                        safeToast(message, Toast.LENGTH_LONG);
-                    });
+            safeToast("Attachment saved locally", Toast.LENGTH_SHORT);
 
         } catch (Exception e) {
             if (attachment != null && isAdded()) {
                 viewModel.markPersonalAttachmentFailed(attachment);
             }
 
-            safelyDeleteStorageFile(ref);
-
             String message = e.getMessage() == null
-                    ? "Could not start attachment upload. Please try again."
-                    : "Could not start attachment upload: " + e.getMessage();
+                    ? "Could not save attachment. Please try again."
+                    : "Could not save attachment: " + e.getMessage();
 
             safeToast(message, Toast.LENGTH_LONG);
         }
@@ -2708,15 +2662,9 @@ public class NotesFragment extends Fragment {
     private void cleanupTemporaryAttachments() {
         if (temporaryAttachments.isEmpty()) return;
         for (PersonalNoteAttachment attachment : new ArrayList<>(temporaryAttachments)) {
-            String storagePath = attachment.getStoragePath();
-            if (storagePath != null && !storagePath.trim().isEmpty()) {
-                FirebaseStorage.getInstance()
-                        .getReference()
-                        .child(storagePath)
-                        .delete()
-                        .addOnFailureListener(e -> {
-                            // Keep the app usable even if Storage cleanup fails.
-                        });
+            String downloadUrl = attachment.getDownloadUrl();
+            if (downloadUrl != null && !downloadUrl.trim().isEmpty()) {
+                safelyDeleteLocalFile(downloadUrl);
             }
             viewModel.deletePersonalAttachment(attachment);
         }
@@ -2791,10 +2739,19 @@ public class NotesFragment extends Fragment {
             Toast.makeText(requireContext(), "File is not uploaded yet", Toast.LENGTH_SHORT).show();
             return;
         }
+        File localFile = new File(fileUrl);
+        if (!localFile.exists()) {
+            Toast.makeText(requireContext(), "File no longer exists on this device", Toast.LENGTH_SHORT).show();
+            return;
+        }
         if (fileName.endsWith(".pdf")) {
             Intent intent = new Intent(Intent.ACTION_VIEW);
-            intent.setDataAndType(Uri.parse(fileUrl), "application/pdf");
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            Uri contentUri = androidx.core.content.FileProvider.getUriForFile(
+                    requireContext(),
+                    requireContext().getPackageName() + ".fileprovider",
+                    localFile);
+            intent.setDataAndType(contentUri, "application/pdf");
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             try {
                 startActivity(Intent.createChooser(intent, "Open PDF"));
             } catch (ActivityNotFoundException e) {
@@ -2851,6 +2808,8 @@ public class NotesFragment extends Fragment {
         settings.setLoadWithOverviewMode(true);
         settings.setUseWideViewPort(true);
         settings.setSupportZoom(true);
+        settings.setAllowFileAccess(true);
+        settings.setAllowContentAccess(true);
         if (fileName.endsWith(".ppt")
                 || fileName.endsWith(".pptx")
                 || fileName.endsWith(".doc")
@@ -2866,9 +2825,9 @@ public class NotesFragment extends Fragment {
                 || fileName.endsWith(".png")
                 || fileName.endsWith(".webp")
                 || fileName.endsWith(".gif")) {
-            viewerUrl = fileUrl;
+            viewerUrl = "file://" + fileUrl;
         } else {
-            viewerUrl = "https://docs.google.com/gview?embedded=true&url=" + Uri.encode(fileUrl);
+            viewerUrl = "file://" + fileUrl;
         }
         webView.loadUrl(viewerUrl);
         LinearLayout zoomBar = new LinearLayout(requireContext());

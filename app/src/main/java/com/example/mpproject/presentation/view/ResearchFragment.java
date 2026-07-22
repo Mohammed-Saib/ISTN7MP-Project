@@ -56,7 +56,7 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
-import com.google.firebase.auth.FirebaseAuth;
+import com.example.mpproject.data.local.LocalSessionManager;
 
 import java.util.List;
 import java.util.Locale;
@@ -66,8 +66,6 @@ public class ResearchFragment extends Fragment {
     private FragmentResearchBinding binding;
     private ResearchViewModel viewModel;
     private ResearchPaperAdapter adapter;
-
-    private FirebaseAuth auth;
 
     private Uri selectedFileUri;
     private String selectedFileName;
@@ -110,8 +108,6 @@ public class ResearchFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
-        auth = FirebaseAuth.getInstance();
 
         setupViewModel();
         setupRecyclerView();
@@ -206,11 +202,7 @@ public class ResearchFragment extends Fragment {
     }
 
     private String getCurrentUserId() {
-        if (auth == null || auth.getCurrentUser() == null) {
-            return null;
-        }
-
-        return auth.getCurrentUser().getUid();
+        return LocalSessionManager.getCurrentUserId(requireContext());
     }
 
     private void observeAllPapers() {

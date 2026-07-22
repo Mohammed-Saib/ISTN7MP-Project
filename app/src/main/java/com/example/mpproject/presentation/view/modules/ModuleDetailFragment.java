@@ -28,8 +28,7 @@ import com.example.mpproject.presentation.viewmodel.AssessmentViewModel;
 import com.example.mpproject.presentation.viewmodel.AssessmentViewModelFactory;
 import com.example.mpproject.presentation.viewmodel.ModuleViewModel;
 import com.example.mpproject.presentation.viewmodel.ModuleViewModelFactory;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
+import com.example.mpproject.data.local.LocalSessionManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -58,8 +57,8 @@ public class ModuleDetailFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) return;
+        String userId = LocalSessionManager.getCurrentUserId(requireContext());
+        if (userId == null) return;
 
         // Retrieve moduleId from nav args bundle
         if (getArguments() != null) {
@@ -86,7 +85,7 @@ public class ModuleDetailFragment extends Fragment {
         });
 
         AppDatabase db = AppDatabase.getDatabase(requireContext());
-        String uid = user.getUid();
+        String uid = userId;
 
         // Module ViewModel (for header / edit)
         ModuleViewModelFactory moduleFactory = new ModuleViewModelFactory(

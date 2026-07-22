@@ -23,8 +23,7 @@ import com.example.mpproject.presentation.adapter.ModuleAdapter;
 import com.example.mpproject.presentation.view.modules.ModuleBottomSheetFragment;
 import com.example.mpproject.presentation.viewmodel.ModuleViewModel;
 import com.example.mpproject.presentation.viewmodel.ModuleViewModelFactory;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
+import com.example.mpproject.data.local.LocalSessionManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,12 +52,12 @@ public class ModulesFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) return;
+        String userId = LocalSessionManager.getCurrentUserId(requireContext());
+        if (userId == null) return;
 
         AppDatabase db = AppDatabase.getDatabase(requireContext());
         ModuleViewModelFactory factory = new ModuleViewModelFactory(
-                new ModuleRepositoryImpl(db.moduleDao()), user.getUid());
+                new ModuleRepositoryImpl(db.moduleDao()), userId);
         viewModel = new ViewModelProvider(this, factory).get(ModuleViewModel.class);
 
         adapter = new ModuleAdapter(module -> {

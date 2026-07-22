@@ -31,8 +31,7 @@ import com.example.mpproject.presentation.viewmodel.SessionViewModel;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.textfield.TextInputEditText;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
+import com.example.mpproject.data.local.LocalSessionManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -94,9 +93,9 @@ public class TimerFragment extends Fragment {
         view.findViewById(R.id.btnSettings).setOnClickListener(v -> openSettings());
         view.findViewById(R.id.btnTodo).setOnClickListener(v -> openTaskPanel());
 
-        // ── Firebase user ─────────────────────────────────────────────────────
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user != null) currentUserId = user.getUid();
+        // ── Local user ─────────────────────────────────────────────────────
+        String userId = LocalSessionManager.getCurrentUserId(requireContext());
+        if (userId != null) currentUserId = userId;
 
         // ── Room DAO ──────────────────────────────────────────────────────────
         todoDao = AppDatabase.getDatabase(requireContext()).todoDao();

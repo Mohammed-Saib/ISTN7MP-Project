@@ -34,8 +34,7 @@ import com.example.mpproject.presentation.viewmodel.ModuleViewModel;
 import com.example.mpproject.presentation.viewmodel.ModuleViewModelFactory;
 import com.example.mpproject.presentation.viewmodel.TaskViewModel;
 import com.example.mpproject.presentation.viewmodel.TaskViewModelFactory;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
+import com.example.mpproject.data.local.LocalSessionManager;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -110,9 +109,9 @@ public class HomeFragment extends Fragment {
     }
 
     private void setupModulePreview() {
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        String userId = LocalSessionManager.getCurrentUserId(requireContext());
 
-        if (user == null) {
+        if (userId == null) {
             showModulePlaceholder("No user");
             return;
         }
@@ -123,7 +122,7 @@ public class HomeFragment extends Fragment {
 
         ModuleViewModelFactory factory = new ModuleViewModelFactory(
                 new ModuleRepositoryImpl(db.moduleDao()),
-                user.getUid()
+                userId
         );
 
         moduleViewModel = new ViewModelProvider(this, factory).get(ModuleViewModel.class);
@@ -132,9 +131,9 @@ public class HomeFragment extends Fragment {
     }
 
     private void setupTodayTasks() {
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        String userId = LocalSessionManager.getCurrentUserId(requireContext());
 
-        if (user == null) {
+        if (userId == null) {
             showNoTodayTasks();
             return;
         }
@@ -143,7 +142,8 @@ public class HomeFragment extends Fragment {
 
         TaskViewModelFactory factory = new TaskViewModelFactory(
                 new TodoRepositoryImpl(db.todoDao()),
-                new ModuleRepositoryImpl(db.moduleDao())
+                new ModuleRepositoryImpl(db.moduleDao()),
+                userId
         );
 
         taskViewModel = new ViewModelProvider(this, factory).get(TaskViewModel.class);
@@ -152,9 +152,9 @@ public class HomeFragment extends Fragment {
     }
 
     private void setupComingUp() {
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        String userId = LocalSessionManager.getCurrentUserId(requireContext());
 
-        if (user == null) {
+        if (userId == null) {
             showNoUpcoming();
             return;
         }
@@ -165,7 +165,7 @@ public class HomeFragment extends Fragment {
                 new CalendarEventRepositoryImpl(db.calendarEventDao()),
                 new TodoRepositoryImpl(db.todoDao()),
                 new ModuleRepositoryImpl(db.moduleDao()),
-                user.getUid()
+                userId
         );
 
         calendarViewModel = new ViewModelProvider(this, factory).get(CalendarViewModel.class);
@@ -453,23 +453,7 @@ public class HomeFragment extends Fragment {
             timeOfDay = getString(R.string.greeting_evening);
         }
 
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-
-        String name = "";
-
-        if (user != null) {
-            if (user.getDisplayName() != null && !user.getDisplayName().trim().isEmpty()) {
-                name = user.getDisplayName().trim();
-            } else if (user.getEmail() != null && user.getEmail().contains("@")) {
-                name = user.getEmail().substring(0, user.getEmail().indexOf("@"));
-            }
-        }
-
-        if (!name.isEmpty()) {
-            binding.tvGreeting.setText(timeOfDay + ", " + name);
-        } else {
-            binding.tvGreeting.setText(timeOfDay);
-        }
+        binding.tvGreeting.setText(timeOfDay + ", Student");
     }
 
     private void setDate() {

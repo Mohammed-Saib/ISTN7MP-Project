@@ -11,17 +11,10 @@ import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 
 import com.example.mpproject.data.local.AppDatabase;
-import com.example.mpproject.data.repository.AssessmentRepositoryImpl;
-import com.example.mpproject.data.repository.CalendarEventRepositoryImpl;
-import com.example.mpproject.data.repository.ModuleNoteRepositoryImpl;
-import com.example.mpproject.data.repository.ModuleRepositoryImpl;
-import com.example.mpproject.data.repository.PersonalNoteRepositoryImpl;
-import com.example.mpproject.data.repository.TodoRepositoryImpl;
+import com.example.mpproject.data.local.LocalSessionManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.example.mpproject.presentation.view.ChatBotBottomSheet;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
@@ -33,44 +26,22 @@ import androidx.core.content.ContextCompat;
 import com.example.mpproject.presentation.notification.NotificationHelper;
 import com.example.mpproject.presentation.notification.ReminderScheduler;
 
-// [View] Single-activity host — owns the NavController and bottom nav visibility.
 public class MainActivity extends AppCompatActivity {
 
     private boolean syncingBottomNav = false;
     private static final int REQUEST_POST_NOTIFICATIONS = 5001;
-
-
-    // Unconditional merge-sync from Firestore for all data types.
-    // Runs on startup so that items added on another device are pulled in.
-    // All FK children (assessments, module notes, todos, calendar events, personal notes) sync
-    // only after modules are committed to Room — Room enforces PRAGMA foreign_keys = ON so any
-    // insert with a non-null moduleId fails silently if the parent module row isn't present yet.
-    private void restoreFromFirestore(String uid) {
-        AppDatabase db = AppDatabase.getDatabase(this);
-
-        new ModuleRepositoryImpl(db.moduleDao()).syncFromFirestore(uid, () -> {
-            new AssessmentRepositoryImpl(db.assessmentDao()).syncFromFirestore(uid);
-            new ModuleNoteRepositoryImpl(db.moduleNoteDao()).syncFromFirestore(uid);
-            new PersonalNoteRepositoryImpl(db.personalNoteDao()).syncFromFirestore(uid);
-            new TodoRepositoryImpl(db.todoDao()).syncFromFirestore(uid);
-            new CalendarEventRepositoryImpl(db.calendarEventDao()).syncFromFirestore(uid);
-        });
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         applySavedThemeMode();
         super.onCreate(savedInstanceState);
 
-        // Allow content to draw behind system bars (edge-to-edge)
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
         setContentView(R.layout.activity_main);
         NotificationHelper.createNotificationChannels(this);
         requestNotificationPermissionIfNeeded();
 
-        //testing
-        //l trigger a motivation notification 1 minute after the app opens
         ReminderScheduler.scheduleMotivationTestReminder(this, 1);
 
         BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
@@ -86,18 +57,6 @@ public class MainActivity extends AppCompatActivity {
 
         NavController navController = navHostFragment.getNavController();
 
-        /*
-         * We are NOT using NavigationUI.setupWithNavController here.
-         *
-         * Reason:
-         * You have a special flow:
-         * Modules -> Module Details -> Notes filtered by module.
-         *
-         * NavigationUI sometimes leaves the bottom nav thinking Modules is still selected,
-         * so tapping Modules again does nothing.
-         *
-         * This manual handler fixes both selected and reselected tab clicks.
-         */
         bottomNav.setOnItemSelectedListener(item -> {
             if (syncingBottomNav) return true;
 
@@ -111,8 +70,6 @@ public class MainActivity extends AppCompatActivity {
             navigateToBottomTab(navController, item.getItemId());
         });
 
-        // Auth and settings screens hide the bottom nav.
-        // Also manually keeps the correct bottom nav item checked.
         navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
             int id = destination.getId();
 
@@ -136,22 +93,18 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // On a fresh launch (not a rotation), sign out if the user didn't check "Remember me".
-        // savedInstanceState is non-null on rotation, so this only fires on cold starts.
         if (savedInstanceState == null) {
             SharedPreferences prefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
 
             if (!prefs.getBoolean("pref_remember_me", false)) {
-                FirebaseAuth.getInstance().signOut();
+                LocalSessionManager.clearSession(this);
             }
         }
 
-        // Already signed in — jump straight to the home dashboard and pull latest data from Firestore.
-        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        String currentUser = LocalSessionManager.getCurrentUserId(this);
 
         if (currentUser != null) {
             navController.navigate(R.id.homeFragment);
-            restoreFromFirestore(currentUser.getUid());
             ReminderScheduler.scheduleDailyStudyReminder(this);
         }
     }
@@ -213,11 +166,6 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (tabId == R.id.notesFragment) {
-            /*
-             * Important:
-             * When tapping Notes directly from bottom nav, open normal NotesFragment
-             * with NO moduleId argument, so it does not stay filtered to the previous module.
-             */
             navigateFreshDestination(navController, R.id.notesFragment);
             return;
         }
