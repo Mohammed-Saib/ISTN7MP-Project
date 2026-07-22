@@ -10,11 +10,9 @@ import androidx.room.Update;
 
 import com.example.mpproject.data.local.entity.UserEntity;
 
-// [Data] Room DAO — all queries return LiveData so the View layer reacts automatically to changes.
 @Dao
 public interface UserDao {
 
-    // REPLACE handles the case where the user logs in again or a profile sync overwrites the row
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insert(UserEntity user);
 
@@ -24,12 +22,21 @@ public interface UserDao {
     @Delete
     void delete(UserEntity user);
 
-    // Look up the cached user by Firebase UID
     @Query("SELECT * FROM users WHERE userId = :userId")
     LiveData<UserEntity> getById(String userId);
 
-    // Convenience method — returns the one cached row (there is only ever one at a time)
     @Query("SELECT * FROM users LIMIT 1")
     LiveData<UserEntity> getCurrentUser();
 
+    @Query("SELECT * FROM users WHERE email = :email LIMIT 1")
+    UserEntity getByEmailSync(String email);
+
+    @Query("SELECT * FROM users WHERE email = :email AND password = :password LIMIT 1")
+    UserEntity loginSync(String email, String password);
+
+    @Query("SELECT * FROM users WHERE email = :email LIMIT 1")
+    LiveData<UserEntity> getByEmail(String email);
+
+    @Query("UPDATE users SET firstName = :firstName, lastName = :lastName, username = :username WHERE userId = :userId")
+    void updateProfile(String userId, String firstName, String lastName, String username);
 }

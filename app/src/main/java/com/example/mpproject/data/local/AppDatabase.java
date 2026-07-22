@@ -44,7 +44,7 @@ import java.util.concurrent.Executors;
                 NoteFolderEntity.class,
                 ResearchPaperEntity.class
         },
-        version = 8,
+        version = 9,
         exportSchema = true
 )
 public abstract class AppDatabase extends RoomDatabase {
