@@ -19,7 +19,7 @@
             android:paddingStart="24dp"
             android:paddingTop="16dp"
             android:paddingEnd="24dp"
-            android:paddingBottom="24dp">
+            android:paddingBottom="48dp">
 
             <ImageView
                 android:id="@+id/auth_logo"

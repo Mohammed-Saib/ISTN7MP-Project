@@ -111,7 +111,7 @@
             android:id="@+id/radioSnoopy"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Snoppy" />
+            android:text="Snoopy" />
 
         <RadioButton
             android:id="@+id/radioStudy"
@@ -127,7 +127,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="SAVE"
-        android:backgroundTint="#3A5F8F"
-        android:textColor="#FFFFFF" />
+        android:backgroundTint="?attr/colorPrimary"
+        android:textColor="?attr/colorOnPrimary" />
 
 </LinearLayout>

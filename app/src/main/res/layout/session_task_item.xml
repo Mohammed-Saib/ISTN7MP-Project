@@ -38,7 +38,7 @@
         android:paddingHorizontal="8dp"
         android:paddingVertical="2dp"
         android:textSize="11sp"
-        android:textColor="#FFFFFF"
+        android:textColor="?attr/colorOnPrimaryContainer"
         android:background="@drawable/bg_chip_soft"/>
 
 </LinearLayout>

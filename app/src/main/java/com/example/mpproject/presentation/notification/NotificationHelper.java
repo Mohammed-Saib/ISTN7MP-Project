@@ -14,6 +14,8 @@ import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 
 import com.example.mpproject.MainActivity;
+import android.annotation.SuppressLint;
+
 import com.example.mpproject.R;
 
 public final class NotificationHelper {
@@ -53,6 +55,7 @@ public final class NotificationHelper {
                 == PackageManager.PERMISSION_GRANTED;
     }
 
+    @SuppressLint("MissingPermission")
     public static void showReminderNotification(Context context,
                                                 int notificationId,
                                                 String title,
