@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModel;
 
 import com.example.mpproject.data.local.entity.UserEntity;
 import com.example.mpproject.domain.repository.AuthRepository;
-import java.util.Map;
 
 public class AuthViewModel extends ViewModel {
     private final AuthRepository authRepository;
@@ -14,8 +13,8 @@ public class AuthViewModel extends ViewModel {
         this.authRepository = authRepository;
     }
 
-    public LiveData<UserEntity> register(String email, String password, String firstName, String lastName, String username, String school) {
-        return authRepository.register(email, password, firstName, lastName, username, school);
+    public LiveData<UserEntity> register(String email, String password, String firstName, String lastName, String school) {
+        return authRepository.register(email, password, firstName, lastName, school);
     }
 
     public LiveData<UserEntity> login(String email, String password) {
@@ -34,15 +33,7 @@ public class AuthViewModel extends ViewModel {
         return authRepository.getError();
     }
 
-    public LiveData<Boolean> resetPassword(String email) {
-        return authRepository.resetPassword(email);
-    }
-
-    public LiveData<Boolean> updateProfile(String firstName, String lastName, String username, String school) {
-        return authRepository.updateUserProfile(firstName, lastName, username, school);
-    }
-
-    public LiveData<Map<String, Object>> getUserData(String uid) {
-        return authRepository.getUserData(uid);
+    public LiveData<Boolean> updateProfile(String firstName, String lastName, String email, String school) {
+        return authRepository.updateUserProfile(firstName, lastName, email, school);
     }
 }

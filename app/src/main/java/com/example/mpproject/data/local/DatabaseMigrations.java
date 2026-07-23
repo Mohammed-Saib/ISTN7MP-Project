@@ -157,5 +157,28 @@ public class DatabaseMigrations {
         }
     };
 
+    // v9 → v10: drops username column, adds school column on users table.
+    public static final Migration MIGRATION_9_10 = new Migration(9, 10) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase db) {
+            db.execSQL("CREATE TABLE IF NOT EXISTS `users_new` ("
+                    + "`userId` TEXT NOT NULL, "
+                    + "`firstName` TEXT, "
+                    + "`lastName` TEXT, "
+                    + "`email` TEXT, "
+                    + "`password` TEXT, "
+                    + "`school` TEXT, "
+                    + "`dateJoined` INTEGER NOT NULL DEFAULT 0, "
+                    + "`lastSyncedAt` INTEGER, "
+                    + "PRIMARY KEY(`userId`))");
+            db.execSQL("INSERT INTO `users_new` "
+                    + "(`userId`, `firstName`, `lastName`, `email`, `password`, `dateJoined`, `lastSyncedAt`) "
+                    + "SELECT `userId`, `firstName`, `lastName`, `email`, `password`, `dateJoined`, `lastSyncedAt` "
+                    + "FROM `users`");
+            db.execSQL("DROP TABLE `users`");
+            db.execSQL("ALTER TABLE `users_new` RENAME TO `users`");
+        }
+    };
+
     private DatabaseMigrations() {}
 }

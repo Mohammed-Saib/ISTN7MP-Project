@@ -1,7 +1,6 @@
 package com.example.mpproject.data.repository;
 
 import android.content.Context;
-import android.util.Log;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -14,13 +13,10 @@ import com.example.mpproject.domain.repository.AuthRepository;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 public class AuthRepositoryImpl implements AuthRepository {
 
-    private static final String TAG = "AuthRepository";
     private final UserDao userDao;
     private final Context context;
     private final MutableLiveData<String> errorLiveData;
@@ -33,7 +29,7 @@ public class AuthRepositoryImpl implements AuthRepository {
     }
 
     @Override
-    public LiveData<UserEntity> register(String email, String password, String firstName, String lastName, String username, String school) {
+    public LiveData<UserEntity> register(String email, String password, String firstName, String lastName, String school) {
         MutableLiveData<UserEntity> userLiveData = new MutableLiveData<>();
         errorLiveData.setValue(null);
 
@@ -48,7 +44,8 @@ public class AuthRepositoryImpl implements AuthRepository {
             String hashedPassword = hashPassword(password);
             long now = System.currentTimeMillis();
 
-            UserEntity user = new UserEntity(userId, username, firstName, lastName, email, hashedPassword, now);
+            UserEntity user = new UserEntity(userId, firstName, lastName, email, hashedPassword, now);
+            user.setSchool(school);
             userDao.insert(user);
 
             LocalSessionManager.setCurrentUserId(context, userId);
@@ -96,14 +93,12 @@ public class AuthRepositoryImpl implements AuthRepository {
             final Object lock = new Object();
 
             AppDatabase.databaseWriteExecutor.execute(() -> {
-                result[0] = userDao.getByEmailSync(null);
+                result[0] = userDao.getByIdSync(userId);
                 synchronized (lock) { lock.notifyAll(); }
             });
 
-            // For synchronous access, query directly on current thread
-            // This is acceptable for session checks at app startup
             synchronized (lock) {
-                try { lock.wait(2000); } catch (InterruptedException ignored) {}
+                try { lock.wait(5000); } catch (InterruptedException ignored) {}
             }
 
             return result[0];
@@ -118,25 +113,7 @@ public class AuthRepositoryImpl implements AuthRepository {
     }
 
     @Override
-    public LiveData<Boolean> resetPassword(String email) {
-        MutableLiveData<Boolean> success = new MutableLiveData<>();
-        errorLiveData.setValue(null);
-
-        AppDatabase.databaseWriteExecutor.execute(() -> {
-            UserEntity user = userDao.getByEmailSync(email);
-            if (user == null) {
-                errorLiveData.postValue("No account found with this email.");
-                success.postValue(false);
-            } else {
-                success.postValue(true);
-            }
-        });
-
-        return success;
-    }
-
-    @Override
-    public LiveData<Boolean> updateUserProfile(String firstName, String lastName, String username, String school) {
+    public LiveData<Boolean> updateUserProfile(String firstName, String lastName, String email, String school) {
         MutableLiveData<Boolean> success = new MutableLiveData<>();
         String userId = LocalSessionManager.getCurrentUserId(context);
 
@@ -147,47 +124,11 @@ public class AuthRepositoryImpl implements AuthRepository {
         }
 
         AppDatabase.databaseWriteExecutor.execute(() -> {
-            userDao.updateProfile(userId, firstName, lastName, username);
+            userDao.updateProfile(userId, firstName, lastName, email, school);
             success.postValue(true);
         });
 
         return success;
-    }
-
-    @Override
-    public LiveData<Map<String, Object>> getUserData(String uid) {
-        MutableLiveData<Map<String, Object>> userData = new MutableLiveData<>();
-
-        AppDatabase.databaseWriteExecutor.execute(() -> {
-            LiveData<UserEntity> liveUser = userDao.getById(uid);
-            // Use a synchronous approach for the one-shot read
-            // We observe on a background thread and post result
-            try {
-                final UserEntity[] holder = new UserEntity[1];
-                final Object lock = new Object();
-
-                liveUser.observeForever(entity -> {
-                    holder[0] = entity;
-                    synchronized (lock) { lock.notifyAll(); }
-                });
-
-                synchronized (lock) { lock.wait(2000); }
-
-                if (holder[0] != null) {
-                    Map<String, Object> map = new HashMap<>();
-                    map.put("firstName", holder[0].getFirstName());
-                    map.put("lastName", holder[0].getLastName());
-                    map.put("username", holder[0].getUsername());
-                    map.put("email", holder[0].getEmail());
-                    map.put("dateJoined", holder[0].getDateJoined());
-                    userData.postValue(map);
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "getUserData failed", e);
-            }
-        });
-
-        return userData;
     }
 
     private String hashPassword(String password) {

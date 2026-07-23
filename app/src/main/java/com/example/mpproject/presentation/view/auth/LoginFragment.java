@@ -9,7 +9,6 @@ import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.EditText;
 import android.widget.Toast;
 
 import android.content.res.Configuration;
@@ -17,7 +16,6 @@ import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
@@ -68,7 +66,6 @@ public class LoginFragment extends Fragment {
         binding.loginButton.setOnClickListener(v -> performLogin());
         binding.registerLink.setOnClickListener(v ->
                 Navigation.findNavController(v).navigate(R.id.action_loginFragment_to_registerFragment));
-        binding.forgotPasswordLink.setOnClickListener(v -> showForgotPasswordDialog());
 
         clearErrorOnType(binding.emailLayout, binding.emailEditText);
         clearErrorOnType(binding.passwordLayout, binding.passwordEditText);
@@ -118,30 +115,6 @@ public class LoginFragment extends Fragment {
                         .navigate(R.id.action_loginFragment_to_homeFragment);
             }
         });
-    }
-
-    private void showForgotPasswordDialog() {
-        EditText resetEmail = new EditText(requireContext());
-        resetEmail.setHint("Enter your email");
-
-        new AlertDialog.Builder(requireContext())
-                .setTitle("Reset Password")
-                .setMessage("We will send a reset link to your email.")
-                .setView(resetEmail)
-                .setPositiveButton("Send", (dialog, which) -> {
-                    String email = resetEmail.getText().toString().trim();
-                    if (!email.isEmpty() && Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                        authViewModel.resetPassword(email).observe(getViewLifecycleOwner(), success -> {
-                            if (success != null && success) {
-                                Toast.makeText(getContext(), "Reset link sent!", Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                    } else {
-                        Toast.makeText(getContext(), "Invalid email", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
     }
 
     private void clearErrorOnType(TextInputLayout layout, TextInputEditText editText) {

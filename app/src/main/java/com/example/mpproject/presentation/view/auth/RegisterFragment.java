@@ -65,7 +65,6 @@ public class RegisterFragment extends Fragment {
 
         clearErrorOnType(binding.firstNameLayout,       binding.firstNameEditText);
         clearErrorOnType(binding.lastNameLayout,        binding.lastNameEditText);
-        clearErrorOnType(binding.usernameLayout,        binding.usernameEditText);
         clearErrorOnType(binding.schoolLayout,          binding.schoolEditText);
         clearErrorOnType(binding.emailLayout,           binding.emailEditText);
         clearErrorOnType(binding.passwordLayout,        binding.passwordEditText);
@@ -83,7 +82,6 @@ public class RegisterFragment extends Fragment {
     private void performRegistration() {
         String firstName = binding.firstNameEditText.getText().toString().trim();
         String lastName  = binding.lastNameEditText.getText().toString().trim();
-        String username  = binding.usernameEditText.getText().toString().trim();
         String school    = binding.schoolEditText.getText().toString().trim();
         String email     = binding.emailEditText.getText().toString().trim();
         String password  = binding.passwordEditText.getText().toString().trim();
@@ -94,7 +92,6 @@ public class RegisterFragment extends Fragment {
 
         if (firstName.isEmpty()) { binding.firstNameLayout.setError("First name required"); hasError = true; }
         if (lastName.isEmpty())  { binding.lastNameLayout.setError("Last name required");   hasError = true; }
-        if (username.isEmpty())  { binding.usernameLayout.setError("Username required");    hasError = true; }
         if (school.isEmpty())    { binding.schoolLayout.setError("School required");        hasError = true; }
 
         if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
@@ -119,7 +116,7 @@ public class RegisterFragment extends Fragment {
         binding.registerButton.setEnabled(false);
         binding.authProgressBar.setVisibility(View.VISIBLE);
 
-        authViewModel.register(email, password, firstName, lastName, username, school)
+        authViewModel.register(email, password, firstName, lastName, school)
                 .observe(getViewLifecycleOwner(), user -> {
                     if (binding == null) return;
                     if (user != null) {

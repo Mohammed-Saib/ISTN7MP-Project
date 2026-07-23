@@ -4,6 +4,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -61,7 +62,7 @@ public class SettingsFragment extends Fragment {
 
         clearErrorOnType(binding.editFirstNameLayout, binding.editFirstNameText);
         clearErrorOnType(binding.editLastNameLayout,  binding.editLastNameText);
-        clearErrorOnType(binding.editUsernameLayout,  binding.editUsernameText);
+        clearErrorOnType(binding.editEmailLayout,     binding.editEmailText);
         clearErrorOnType(binding.editSchoolLayout,    binding.editSchoolText);
 
         authViewModel.getError().observe(getViewLifecycleOwner(), error -> {
@@ -73,7 +74,6 @@ public class SettingsFragment extends Fragment {
         });
 
         binding.saveProfileButton.setOnClickListener(v -> saveProfile());
-        binding.profileResetPasswordButton.setOnClickListener(v -> resetPassword());
 
         SharedPreferences themePrefs = requireContext()
                 .getSharedPreferences("app_prefs", requireContext().MODE_PRIVATE);
@@ -103,55 +103,48 @@ public class SettingsFragment extends Fragment {
         UserEntity user = authViewModel.getCurrentUser();
         if (user == null) return;
 
-        binding.profileProgressBar.setVisibility(View.VISIBLE);
-        authViewModel.getUserData(user.getUserId()).observe(getViewLifecycleOwner(), data -> {
-            if (binding == null) return;
-            binding.profileProgressBar.setVisibility(View.GONE);
-            if (data != null) {
-                String firstName = (String) data.get("firstName");
-                String lastName  = (String) data.get("lastName");
-                String username  = (String) data.get("username");
-                String school    = (String) data.get("school");
-                String email     = (String) data.get("email");
+        String firstName = user.getFirstName();
+        String lastName  = user.getLastName();
+        String email     = user.getEmail();
+        String school    = user.getSchool();
 
-                // Populate the read-only overview
-                String fullName = (firstName != null ? firstName : "") + " " + (lastName != null ? lastName : "");
-                binding.tvProfileName.setText(fullName.trim());
-                binding.tvProfileUsername.setText("@" + (username != null ? username : ""));
-                binding.userEmailDisplay.setText(email != null ? email : "");
+        // Populate the read-only overview
+        String fullName = (firstName != null ? firstName : "") + " " + (lastName != null ? lastName : "");
+        binding.tvProfileName.setText(fullName.trim());
+        binding.userEmailDisplay.setText(email != null ? email : "");
 
-                Long dateJoined = (Long) data.get("dateJoined");
-                if (dateJoined != null) {
-                    SimpleDateFormat sdf = new SimpleDateFormat("MMMM d, yyyy", Locale.getDefault());
-                    binding.dateJoinedDisplay.setText("Member since " + sdf.format(new Date(dateJoined)));
-                }
+        Long dateJoined = user.getDateJoined();
+        if (dateJoined > 0) {
+            SimpleDateFormat sdf = new SimpleDateFormat("MMMM d, yyyy", Locale.getDefault());
+            binding.dateJoinedDisplay.setText("Member since " + sdf.format(new Date(dateJoined)));
+        }
 
-                // Pre-fill edit fields (so they're ready when the user opens the edit panel)
-                binding.editFirstNameText.setText(firstName);
-                binding.editLastNameText.setText(lastName);
-                binding.editUsernameText.setText(username);
-                binding.editSchoolText.setText(school);
-            }
-        });
+        // Pre-fill edit fields
+        binding.editFirstNameText.setText(firstName);
+        binding.editLastNameText.setText(lastName);
+        binding.editEmailText.setText(email);
+        binding.editSchoolText.setText(school);
     }
 
     private void saveProfile() {
         String firstName = binding.editFirstNameText.getText().toString().trim();
         String lastName  = binding.editLastNameText.getText().toString().trim();
-        String username  = binding.editUsernameText.getText().toString().trim();
+        String email     = binding.editEmailText.getText().toString().trim();
         String school    = binding.editSchoolText.getText().toString().trim();
 
         boolean hasError = false;
         if (firstName.isEmpty()) { binding.editFirstNameLayout.setError("First name required"); hasError = true; }
         if (lastName.isEmpty())  { binding.editLastNameLayout.setError("Last name required");   hasError = true; }
-        if (username.isEmpty())  { binding.editUsernameLayout.setError("Username required");    hasError = true; }
+        if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            binding.editEmailLayout.setError("Valid email required"); hasError = true;
+        }
         if (school.isEmpty())    { binding.editSchoolLayout.setError("School required");        hasError = true; }
         if (hasError) return;
 
         binding.saveProfileButton.setEnabled(false);
         binding.profileProgressBar.setVisibility(View.VISIBLE);
 
-        authViewModel.updateProfile(firstName, lastName, username, school)
+        authViewModel.updateProfile(firstName, lastName, email, school)
                 .observe(getViewLifecycleOwner(), success -> {
                     if (binding == null) return;
                     binding.profileProgressBar.setVisibility(View.GONE);
@@ -160,22 +153,11 @@ public class SettingsFragment extends Fragment {
                         Toast.makeText(getContext(), "Profile updated!", Toast.LENGTH_SHORT).show();
                         // Update overview text and collapse edit panel
                         binding.tvProfileName.setText(firstName + " " + lastName);
-                        binding.tvProfileUsername.setText("@" + username);
+                        binding.userEmailDisplay.setText(email);
                         binding.llEditFields.setVisibility(View.GONE);
                         binding.btnEditProfile.setText("Edit Profile");
                     }
                 });
-    }
-
-    private void resetPassword() {
-        UserEntity user = authViewModel.getCurrentUser();
-        if (user != null && user.getEmail() != null) {
-            authViewModel.resetPassword(user.getEmail()).observe(getViewLifecycleOwner(), success -> {
-                if (success != null && success) {
-                    Toast.makeText(getContext(), "Reset link sent to your email!", Toast.LENGTH_SHORT).show();
-                }
-            });
-        }
     }
 
     private void clearErrorOnType(TextInputLayout layout, TextInputEditText editText) {

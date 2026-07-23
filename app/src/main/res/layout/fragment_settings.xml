@@ -83,22 +83,13 @@
                     android:textStyle="bold" />
 
                 <TextView
-                    android:id="@+id/tv_profile_username"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:alpha="0.7"
-                    android:textColor="?attr/colorOnSurface"
-                    android:textSize="14sp" />
-
-                <TextView
                     android:id="@+id/user_email_display"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="4dp"
                     android:alpha="0.7"
                     android:textColor="?attr/colorOnSurface"
-                    android:textSize="13sp" />
+                    android:textSize="14sp" />
 
                 <TextView
                     android:id="@+id/date_joined_display"
@@ -108,16 +99,6 @@
                     android:alpha="0.7"
                     android:textColor="?attr/colorOnSurface"
                     android:textSize="13sp" />
-
-                <!-- Edit Profile toggle button -->
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_edit_profile"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="52dp"
-                    android:layout_marginTop="16dp"
-                    android:text="Edit Profile"
-                    app:cornerRadius="14dp" />
 
                 <!-- ── Edit fields (hidden until Edit Profile is tapped) ── -->
                 <LinearLayout
@@ -168,22 +149,22 @@
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/edit_username_layout"
+                        android:id="@+id/edit_email_layout"
                         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
-                        android:hint="Username"
+                        android:hint="Email"
                         app:boxCornerRadiusBottomEnd="12dp"
                         app:boxCornerRadiusBottomStart="12dp"
                         app:boxCornerRadiusTopEnd="12dp"
                         app:boxCornerRadiusTopStart="12dp">
 
                         <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/edit_username_text"
+                            android:id="@+id/edit_email_text"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:inputType="textNoSuggestions"
+                            android:inputType="textEmailAddress"
                             android:maxLines="1" />
                     </com.google.android.material.textfield.TextInputLayout>
 
@@ -215,16 +196,17 @@
                         android:text="Save Profile"
                         app:cornerRadius="14dp" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/profile_reset_password_button"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="52dp"
-                        android:layout_marginTop="8dp"
-                        android:text="Reset Password"
-                        app:cornerRadius="14dp" />
-
                 </LinearLayout>
+
+                <!-- Edit Profile / Cancel toggle button (always at bottom of card) -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_edit_profile"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="16dp"
+                    android:text="Edit Profile"
+                    app:cornerRadius="14dp" />
 
             </LinearLayout>
 

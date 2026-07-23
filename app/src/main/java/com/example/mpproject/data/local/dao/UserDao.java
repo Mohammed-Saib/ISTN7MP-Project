@@ -37,6 +37,9 @@ public interface UserDao {
     @Query("SELECT * FROM users WHERE email = :email LIMIT 1")
     LiveData<UserEntity> getByEmail(String email);
 
-    @Query("UPDATE users SET firstName = :firstName, lastName = :lastName, username = :username WHERE userId = :userId")
-    void updateProfile(String userId, String firstName, String lastName, String username);
+    @Query("SELECT * FROM users WHERE userId = :userId LIMIT 1")
+    UserEntity getByIdSync(String userId);
+
+    @Query("UPDATE users SET firstName = :firstName, lastName = :lastName, email = :email, school = :school WHERE userId = :userId")
+    void updateProfile(String userId, String firstName, String lastName, String email, String school);
 }
