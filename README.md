@@ -277,7 +277,7 @@ Aisha was responsible for building the Pomodoro timer feature and linking it to 
 
 ### Firdous Mariam Khan
 
-**Primary areas:** Notes System, UI/UX Design, Research Paper Organiser, File Uploads & Management, Database Design, Documentation, Testing
+**Primary areas:** Notes System, UI/UX Design, Research Paper Organiser, File Uploads & Management, Notifications System, Database Design, Documentation, Testing
 
 Firdous was responsible for the entire notes system (module notes, personal notes, folders, and attachments), the research paper organiser, and the file upload/management infrastructure. She also led UI/UX design decisions and contributed to database design, documentation, and testing.
 
