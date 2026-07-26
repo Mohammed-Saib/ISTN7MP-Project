@@ -2,16 +2,16 @@
 
 A comprehensive Android productivity application designed for university students to manage their academic life. Built with Java using Clean Architecture and MVVM pattern.
 
-**Developed by:** Aisha Abba Omar, Firdous Khan, and Mohammed Saib as part of the ISTN7MP module.
+**Developed by:**  Mohammed Saib, Firdous Mariam Khan and Aisha Abba Omar as part of the ISTN7MP module.
 
 ## Project History
 
-Academic Weapon was originally developed as a university module project with full cloud integration. The app used **Firebase Authentication** for user accounts, **Firebase Firestore** for cloud metadata synchronisation across devices, and **Firebase Storage** for uploaded files (module notes, personal attachments, and research papers). The architecture was designed as an offline-first hybrid system where Room served as the local cache and Firestore as the cloud source of truth.
+Academic Weapon was originally developed as a university module project with full cloud integration. The app used **Firebase Authentication** for user accounts, **Firebase Firestore** for cloud metadata synchronisation across devices, and **Firebase Storage** for uploaded files (module notes, personal notes, file attachments, and research papers). The architecture was designed as an offline-first hybrid system where Room served as the local cache and Firestore as the cloud source of truth.
 
 Following the end of the module, the Firebase and Google Cloud services backing this project were disabled. To ensure the app remains functional, all cloud dependencies have been removed and the application has been converted to run **entirely locally** on-device. Key changes made during this cleanup include:
 
 - **Firebase Auth** replaced with local Room-based authentication (passwords hashed with SHA-256, session managed via SharedPreferences)
-- **Firebase Firestore** removed from all 10 repository implementations — data operations now go directly to Room
+- **Firebase Firestore** removed from all 10 repository implementations - data operations now go directly to Room
 - **Firebase Storage** replaced with Android internal file storage (`context.getFilesDir()`)
 - **All cloud sync logic** (`syncToFirestore` / `syncFromFirestore` methods) stripped from every repository
 - **Google Services plugin** and `google-services.json` deleted
@@ -21,6 +21,12 @@ Following the end of the module, the Firebase and Google Cloud services backing 
 The app now compiles and runs with zero external service dependencies.
 
 ## Features
+
+### Home Dashboard
+- Personalised dashboard showing today's tasks and upcoming events
+- Quick access to modules, notes, calendar, timer, and research papers
+- Snapshot of academic progress and upcoming deadlines
+- Entry point to the app's core productivity features
 
 ### Module Management
 - Create, edit, and archive university modules
@@ -70,7 +76,7 @@ The app now compiles and runs with zero external service dependencies.
 ### Additional Features
 - AI Chatbot for quick queries
 - Dark mode / Light mode theme support
-- Local notification system with daily study reminders
+- Local notification system with daily study reminders and upcoming tasks
 - Motivation reminders
 - User registration and login (local authentication)
 
@@ -171,29 +177,29 @@ No API keys or external service configuration required - the app runs entirely o
 - **Data export** to CSV or PDF for module summaries, assessment reports, or task lists
 
 ### User Experience
-- **Widgets** for home screen — quick view of today's tasks, upcoming deadlines, or timer controls
+- **Widgets** for home screen - quick view of today's tasks, upcoming deadlines, or timer controls
 - **Tablet / landscape layouts** for larger screens
-- **Search across all features** — a unified global search that covers modules, notes, tasks, events, and research papers
+- **Search across all features** - a unified global search that covers modules, notes, tasks, events, and research papers
 - **Drag-and-drop reordering** for tasks and notes
-- **Batch operations** — select and delete/archive multiple items at once
+- **Batch operations** - select and delete/archive multiple items at once
 
 ### Productivity Features
-- **Grade calculator** — predict required marks to hit target grades based on assessment weightings
-- **Study analytics** — track time spent in Pomodoro sessions, tasks completed per day, and module study distribution
-- **Dashboard customisation** — let users choose which widgets appear on the home screen and in what order
-- **Smart task scheduling** — suggest optimal study times based on due dates and available time slots
-- **Deadline warnings** — proactive alerts when assessment deadlines are approaching or when workload is unusually high
+- **Grade calculator** - predict required marks to hit target grades based on assessment weightings
+- **Study analytics** - track time spent in Pomodoro sessions, tasks completed per day, and module study distribution
+- **Dashboard customisation** - let users choose which widgets appear on the home screen and in what order
+- **Smart task scheduling** - suggest optimal study times based on due dates and available time slots
+- **Deadline warnings** - proactive alerts when assessment deadlines are approaching or when workload is unusually high
 
 ### Notes & Files
 - **Markdown support** in personal notes for formatted text, lists, and code blocks
 - **Handwritten notes / drawing** support using a canvas view
 - **Document scanning** using the device camera with ML Kit text recognition
-- **Tagging system** for notes — cross-cutting labels independent of folders and modules
+- **Tagging system** for notes - cross-cutting labels independent of folders and modules
 
 ### Notifications & Reminders
-- **Customisable notification schedules** — let users set quiet hours and preferred reminder times
-- **Location-based reminders** — trigger reminders when arriving at a specific location (e.g., campus)
-- **Notification grouping** — bundle multiple upcoming deadlines into a single summary notification
+- **Customisable notification schedules** - let users set quiet hours and preferred reminder times
+- **Location-based reminders** - trigger reminders when arriving at a specific location (e.g., campus)
+- **Notification grouping** - bundle multiple upcoming deadlines into a single summary notification
 
 ### Testing & Quality
 - **Unit tests** for ViewModels, repositories, and DAOs using JUnit and Room testing
@@ -202,16 +208,16 @@ No API keys or external service configuration required - the app runs entirely o
 - **Code coverage reporting** with JaCoCo
 
 ### Accessibility
-- **Screen reader optimisation** — ensure all interactive elements have proper content descriptions
-- **Larger text support** — respect system font scale across all screens
+- **Screen reader optimisation** - ensure all interactive elements have proper content descriptions
+- **Larger text support** - respect system font scale across all screens
 - **High contrast mode** for users with visual impairments
 - **Keyboard navigation** support for external keyboards and switch controls
 
 ### Architecture & Code Quality
 - **Dependency injection** with Hilt/Dagger instead of manual ViewModelFactory construction
-- **Kotlin migration** — convert from Java to Kotlin for null safety, coroutines, and modern Android idioms
+- **Kotlin migration** - convert from Java to Kotlin for null safety, coroutines, and modern Android idioms
 - **Kotlin Coroutines** for async operations instead of ExecutorService threads
-- **Modularisation** — split into feature modules (`:feature:calendar`, `:feature:notes`, etc.) for faster builds and better separation
+- **Modularisation** - split into feature modules (`:feature:calendar`, `:feature:notes`, etc.) for faster builds and better separation
 - **Code coverage** targets and linting rules enforced in CI
 
 ## Project Structure
@@ -236,9 +242,9 @@ Academic Weapon/
 
 ### Aisha Abba Omar
 
-**Primary areas:** Pomodoro Timer, To-Do List, UI Development, Database Design, Documentation, Testing
+**Primary areas:** Pomodoro Timer, Timer-To-Do Integration, UI Development, Database Design, Documentation, Testing
 
-Aisha was responsible for building the Pomodoro timer feature and the task management (to-do) system, two of the core productivity tools in the app. She also contributed to the overall UI design, database schema design, documentation, and testing.
+Aisha was responsible for building the Pomodoro timer feature and linking it to the task management (to-do) system, one of the core productivity tools in the app. She also contributed to the overall UI design, database schema design, documentation, and testing.
 
 **Pomodoro Timer** (`presentation/view/TimerFragment.java`, `presentation/view/TimerSettingFragment.java`, `presentation/viewmodel/PomodoroViewModel.java`, `data/repository/PomodoroRepositoryImpl.java`, `data/local/PomodoroPreferences.java`, `data/local/entity/PomodoroEntity.java`, `data/local/dao/PomodoroDao.java`, `domain/repository/PomodoroRepository.java`, `domain/model/PomodoroSettings.java`, `presentation/adapter/SessionTaskAdapter.java`, `presentation/model/PomodoroUiState.java`):
 - Implemented the full Pomodoro timer with configurable focus duration, short break, long break, and sessions before long break
@@ -249,12 +255,12 @@ Aisha was responsible for building the Pomodoro timer feature and the task manag
 - Built the timer settings bottom sheet for customising durations and themes
 - Implemented recommended tasks panel that surfaces high-priority and upcoming tasks
 
-**To-Do List** (`presentation/view/TasksFragment.java`, `presentation/view/todo/TodoBottomSheetFragment.java`, `presentation/viewmodel/TaskViewModel.java`, `presentation/viewmodel/TaskViewModelFactory.java`, `data/repository/TodoRepositoryImpl.java`, `data/local/entity/TodoEntity.java`, `data/local/dao/TodoDao.java`, `domain/repository/TodoRepository.java`, `domain/model/Todo.java`, `presentation/adapter/TaskAdapter.java`, `presentation/adapter/MyTaskAdapter.java`):
-- Designed and implemented the task creation bottom sheet with title, description, priority, due date, module linking, and recurrence options
-- Built the task filtering system (All, High Priority, Medium, Low, Completed) with search functionality
-- Implemented `TaskViewModel` with filtered task lists, task completion toggling, and deletion
-- Created the recurring task system that automatically generates the next occurrence when a task is completed
-- Designed task adapters for displaying tasks with priority indicators and due date formatting
+**Timer & Task Integration**
+- Linked the Pomodoro timer with the task management system so users can select tasks for study sessions.
+- Implemented the session task workflow between the To-Do feature and the timer using a shared ViewModel.
+- Added the recommended tasks panel, displaying high-priority and upcoming tasks for quick study selection.
+- Ensured selected tasks are displayed during active Pomodoro sessions.
+- Integrated timer functionality with existing task data while maintaining separation between the timer and task management components.
 
 **Database Design:**
 - Co-designed the database schema with the team, contributing to the table structure for todos, calendar events, and the Pomodoro preferences
@@ -269,17 +275,17 @@ Aisha was responsible for building the Pomodoro timer feature and the task manag
 
 ---
 
-### Firdous Khan
+### Firdous Mariam Khan
 
-**Primary areas:** Notes System, UI/UX Design, Research Paper Organiser, File Uploads & Management, Database Design, Documentation, Testing
+**Primary areas:** Notes System, UI/UX Design, Research Paper Organiser, File Uploads & Management, Notifications System, Database Design, Documentation, Testing
 
 Firdous was responsible for the entire notes system (module notes, personal notes, folders, and attachments), the research paper organiser, and the file upload/management infrastructure. She also led UI/UX design decisions and contributed to database design, documentation, and testing.
 
 **Notes System** (`presentation/view/NotesFragment.java`, `presentation/viewmodel/NotesViewModel.java`, `data/repository/ModuleNoteRepositoryImpl.java`, `data/repository/PersonalNoteRepositoryImpl.java`, `data/repository/PersonalNoteAttachmentRepositoryImpl.java`, `data/repository/NoteFolderRepositoryImpl.java`, `data/local/entity/ModuleNoteEntity.java`, `data/local/entity/PersonalNoteEntity.java`, `data/local/entity/PersonalNoteAttachmentEntity.java`, `data/local/entity/NoteFolderEntity.java`, `data/local/dao/ModuleNoteDao.java`, `data/local/dao/PersonalNoteDao.java`, `data/local/dao/PersonalNoteAttachmentDao.java`, `data/local/dao/NoteFolderDao.java`, `domain/repository/ModuleNoteRepository.java`, `domain/repository/PersonalNoteRepository.java`, `domain/repository/PersonalNoteAttachmentRepository.java`, `domain/repository/NoteFolderRepository.java`, `domain/model/ModuleNote.java`, `domain/model/PersonalNote.java`, `domain/model/PersonalNoteAttachment.java`, `domain/model/NoteFolder.java`, `presentation/adapter/NotesAdapter.java`, `presentation/model/NoteListItem.java`):
-- Built the entire notes system from the ground up, including three distinct note types: module file notes, personal notes, and note attachments
+- Built the entire notes system from the ground up, including three distinct note types: module file notes, personal notes, and note attachments of various formats 
 - Implemented folder organisation for personal notes, allowing users to create, rename, and delete folders to categorise their notes
 - Designed the unified notes list that merges all note types into a single scrollable view with type indicators and search
-- Built the module filter system so users can view notes for a specific module
+- Built the module filter system so users can view notes for a specific module in the app
 - Implemented note pinning to keep important notes at the top of the list
 - Created the search functionality across all note types (title, content, filename)
 - Designed all four note-related DAOs with complex queries including joins, aggregations, and full-text search patterns
@@ -299,9 +305,20 @@ Firdous was responsible for the entire notes system (module notes, personal note
 - Created the file metadata tracking system (filename, type, size, path, upload date)
 - Implemented the PDF viewer integration using ACTION_VIEW intents
 
+**Notification System** (`presentation/notification/NotificationHelper.java`, `presentation/notification/NotificationReceiver.java`, `presentation/notification/ReminderScheduler.java`):
+- Designed and implemented the application's local notification system.
+- Built notification scheduling for upcoming tasks, calendar events, daily study reminders, and motivational notifications.
+- Implemented notification channels for Android 8.0+ compatibility.
+- Added runtime notification permission handling for Android 13+.
+- Implemented safe reminder scheduling with past-date validation, stable request IDs, cancellation of outdated reminders, and fallback alarm handling.
+- Integrated the notification system with tasks, calendar events, and Pomodoro reminders to improve productivity.
+
 **UI/UX Design:**
 - Led UI/UX design decisions across the app, establishing visual patterns for cards, bottom sheets, and navigation
-- Designed the visual language for note type indicators, folder icons, and status badges
+- Designed the application's mock-up layouts before implementation, establishing the navigation flow and screen structure.
+- Connected the Home dashboard to the application's primary features, creating seamless navigation between modules, notes, tasks, calendar, timer, and research papers.
+- Established consistent design standards for cards, bottom sheets, icons, colours, spacing, typography, and navigation patterns.
+- Designed the visual language for note type indicators, folder icons, research paper status badges, and file type indicators.
 - Contributed to the overall layout and user flow of the application
 
 **Database Design:**
@@ -355,6 +372,13 @@ Mohammed was responsible for the foundational project setup, the entire data lay
 - Designed module detail screen showing assessments, stats, and linked notes
 - Implemented module archiving and deletion with confirmation dialogs
 - Created module-adaptive UI elements (coloured headers, accent colours)
+
+**To-Do List** (`presentation/view/TasksFragment.java`, `presentation/view/todo/TodoBottomSheetFragment.java`, `presentation/viewmodel/TaskViewModel.java`, `presentation/viewmodel/TaskViewModelFactory.java`, `data/repository/TodoRepositoryImpl.java`, `data/local/entity/TodoEntity.java`, `data/local/dao/TodoDao.java`, `domain/repository/TodoRepository.java`, `domain/model/Todo.java`, `presentation/adapter/TaskAdapter.java`, `presentation/adapter/MyTaskAdapter.java`):
+- Designed and implemented the task creation bottom sheet with title, description, priority, due date, module linking, and recurrence options
+- Built the task filtering system (All, High Priority, Medium, Low, Completed) with search functionality
+- Implemented `TaskViewModel` with filtered task lists, task completion toggling, and deletion
+- Created the recurring task system that automatically generates the next occurrence when a task is completed
+- Designed task adapters for displaying tasks with priority indicators and due date formatting
 
 **Assessment Tracker** (`presentation/view/modules/AssessmentBottomSheetFragment.java`, `presentation/viewmodel/AssessmentViewModel.java`, `presentation/viewmodel/AssessmentViewModelFactory.java`, `data/repository/AssessmentRepositoryImpl.java`, `data/local/entity/AssessmentEntity.java`, `data/local/dao/AssessmentDao.java`, `domain/repository/AssessmentRepository.java`, `domain/model/Assessment.java`, `presentation/adapter/AssessmentAdapter.java`):
 - Built the assessment creation and editing system linked to modules
