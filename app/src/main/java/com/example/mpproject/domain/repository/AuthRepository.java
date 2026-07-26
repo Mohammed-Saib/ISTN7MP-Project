@@ -11,4 +11,5 @@ public interface AuthRepository {
     UserEntity getCurrentUser();
     LiveData<String> getError();
     LiveData<Boolean> updateUserProfile(String firstName, String lastName, String email, String school);
+    LiveData<Boolean> changePassword(String currentPassword, String newPassword);
 }

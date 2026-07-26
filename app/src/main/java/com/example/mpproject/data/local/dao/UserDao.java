@@ -42,4 +42,7 @@ public interface UserDao {
 
     @Query("UPDATE users SET firstName = :firstName, lastName = :lastName, email = :email, school = :school WHERE userId = :userId")
     void updateProfile(String userId, String firstName, String lastName, String email, String school);
+
+    @Query("UPDATE users SET password = :newPassword WHERE userId = :userId")
+    void updatePassword(String userId, String newPassword);
 }

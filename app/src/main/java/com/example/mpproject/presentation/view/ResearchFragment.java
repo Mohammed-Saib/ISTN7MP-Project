@@ -58,6 +58,7 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.example.mpproject.data.local.LocalSessionManager;
 
+import java.io.File;
 import java.util.List;
 import java.util.Locale;
 
@@ -811,15 +812,42 @@ public class ResearchFragment extends Fragment {
             return;
         }
 
-        if (safeFileName.endsWith(".pdf")) {
+        if (safeFileName.endsWith(".pdf")
+                || safeFileName.endsWith(".doc")
+                || safeFileName.endsWith(".docx")
+                || safeFileName.endsWith(".ppt")
+                || safeFileName.endsWith(".pptx")) {
+            String mimeType;
+            if (safeFileName.endsWith(".pdf")) {
+                mimeType = "application/pdf";
+            } else if (safeFileName.endsWith(".doc")) {
+                mimeType = "application/msword";
+            } else if (safeFileName.endsWith(".docx")) {
+                mimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+            } else if (safeFileName.endsWith(".ppt")) {
+                mimeType = "application/vnd.ms-powerpoint";
+            } else {
+                mimeType = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+            }
+
+            File localFile = new File(safeFileUrl);
+            if (!localFile.exists()) {
+                Toast.makeText(requireContext(), "File no longer exists on this device", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
             Intent intent = new Intent(Intent.ACTION_VIEW);
-            intent.setDataAndType(Uri.parse(safeFileUrl), "application/pdf");
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            Uri contentUri = androidx.core.content.FileProvider.getUriForFile(
+                    requireContext(),
+                    requireContext().getPackageName() + ".fileprovider",
+                    localFile);
+            intent.setDataAndType(contentUri, mimeType);
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
             try {
-                startActivity(Intent.createChooser(intent, "Open PDF"));
+                startActivity(Intent.createChooser(intent, "Open file"));
             } catch (ActivityNotFoundException e) {
-                Toast.makeText(requireContext(), "No PDF viewer found on this device.", Toast.LENGTH_LONG).show();
+                Toast.makeText(requireContext(), "No app found to open this file type.", Toast.LENGTH_LONG).show();
             }
 
             return;

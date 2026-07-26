@@ -14,19 +14,17 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+
+import com.example.mpproject.data.local.AppDatabase;
 
 public class ResearchPaperRepositoryImpl implements ResearchPaperRepository {
 
     private final Context context;
     private final ResearchPaperDao researchPaperDao;
-    private final ExecutorService executorService;
 
     public ResearchPaperRepositoryImpl(Context context, ResearchPaperDao researchPaperDao) {
         this.context = context.getApplicationContext();
         this.researchPaperDao = researchPaperDao;
-        this.executorService = Executors.newSingleThreadExecutor();
     }
 
     @Override
@@ -86,7 +84,7 @@ public class ResearchPaperRepositoryImpl implements ResearchPaperRepository {
         String safeFileName = makeSafeFileName(fileName);
         String localPath = "research_papers/" + userId + "/" + paperId + "_" + safeFileName;
 
-        executorService.execute(() -> {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
             try {
                 File localFile = new File(context.getFilesDir(), localPath);
                 localFile.getParentFile().mkdirs();
@@ -158,7 +156,7 @@ public class ResearchPaperRepositoryImpl implements ResearchPaperRepository {
 
         paper.setUpdatedAt(System.currentTimeMillis());
 
-        executorService.execute(() -> {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
             researchPaperDao.insert(paper);
             callback.onSuccess();
         });
@@ -181,7 +179,7 @@ public class ResearchPaperRepositoryImpl implements ResearchPaperRepository {
             return;
         }
 
-        executorService.execute(() -> {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
             // Delete local file if it exists
             String localPath = paper.getStoragePath();
             if (localPath != null && !localPath.trim().isEmpty()) {

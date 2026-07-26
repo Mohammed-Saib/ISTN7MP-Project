@@ -1,5 +1,7 @@
 package com.example.mpproject.data.repository;
 
+import android.util.Log;
+
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Transformations;
 
@@ -11,6 +13,7 @@ import com.example.mpproject.domain.repository.PersonalNoteRepository;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class PersonalNoteRepositoryImpl implements PersonalNoteRepository {
 
@@ -21,18 +24,40 @@ public class PersonalNoteRepositoryImpl implements PersonalNoteRepository {
     }
 
     @Override
-    public void insert(PersonalNote note) {
-        AppDatabase.databaseWriteExecutor.execute(() -> personalNoteDao.insert(toEntity(note)));
+    public void insert(PersonalNote note, Consumer<Boolean> callback) {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            try {
+                personalNoteDao.insert(toEntity(note));
+                if (callback != null) callback.accept(true);
+            } catch (Exception e) {
+                Log.e("PersonalNoteRepo", "Insert failed", e);
+                if (callback != null) callback.accept(false);
+            }
+        });
     }
 
     @Override
-    public void update(PersonalNote note) {
-        AppDatabase.databaseWriteExecutor.execute(() -> personalNoteDao.update(toEntity(note)));
+    public void update(PersonalNote note, Consumer<Boolean> callback) {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            try {
+                personalNoteDao.update(toEntity(note));
+                if (callback != null) callback.accept(true);
+            } catch (Exception e) {
+                Log.e("PersonalNoteRepo", "Update failed", e);
+                if (callback != null) callback.accept(false);
+            }
+        });
     }
 
     @Override
     public void delete(PersonalNote note) {
-        AppDatabase.databaseWriteExecutor.execute(() -> personalNoteDao.delete(toEntity(note)));
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            try {
+                personalNoteDao.delete(toEntity(note));
+            } catch (Exception e) {
+                Log.e("PersonalNoteRepo", "Delete failed", e);
+            }
+        });
     }
 
     @Override

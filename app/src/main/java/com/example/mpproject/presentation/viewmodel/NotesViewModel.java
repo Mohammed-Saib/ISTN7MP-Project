@@ -1,5 +1,7 @@
 package com.example.mpproject.presentation.viewmodel;
 
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Html;
 
 import androidx.lifecycle.LiveData;
@@ -192,7 +194,7 @@ public class NotesViewModel extends ViewModel {
             if (folderId.equals(note.getFolderId())) {
                 note.setFolderId(null);
                 note.setUpdatedAt(System.currentTimeMillis());
-                personalNoteRepository.update(note);
+                personalNoteRepository.update(note, null);
             }
         }
 
@@ -232,15 +234,18 @@ public class NotesViewModel extends ViewModel {
             note.setFolderId(cleanFolderId);
             note.setUpdatedAt(System.currentTimeMillis());
 
-            personalNoteRepository.update(note);
-
-            for (int i = 0; i < latestPersonalNotes.size(); i++) {
-                PersonalNote existing = latestPersonalNotes.get(i);
-                if (existing.getNoteId() != null && existing.getNoteId().equals(note.getNoteId())) {
-                    latestPersonalNotes.set(i, note);
-                    break;
+            personalNoteRepository.update(note, success -> {
+                if (success) {
+                    for (int i = 0; i < latestPersonalNotes.size(); i++) {
+                        PersonalNote existing = latestPersonalNotes.get(i);
+                        if (existing.getNoteId() != null && existing.getNoteId().equals(note.getNoteId())) {
+                            latestPersonalNotes.set(i, note);
+                            break;
+                        }
+                    }
+                    rebuildList();
                 }
-            }
+            });
 
         } else {
             ModuleNote note = findModuleNote(item.getId());
@@ -258,8 +263,6 @@ public class NotesViewModel extends ViewModel {
                 }
             }
         }
-
-        rebuildList();
     }
 
     public ModuleNote createUploadingModuleNote(String moduleId,
@@ -334,14 +337,11 @@ public class NotesViewModel extends ViewModel {
         rebuildList();
     }
 
-    public PersonalNote addPersonalNote(String title, String content, String moduleIdOrNull) {
-        return addPersonalNote(title, content, moduleIdOrNull, null);
-    }
-
-    public PersonalNote addPersonalNote(String title,
-                                        String content,
-                                        String moduleIdOrNull,
-                                        String folderIdOrNull) {
+    public void addPersonalNote(String title,
+                                String content,
+                                String moduleIdOrNull,
+                                String folderIdOrNull,
+                                PersonalNoteCallback callback) {
         long now = System.currentTimeMillis();
 
         PersonalNote note = new PersonalNote(
@@ -359,32 +359,33 @@ public class NotesViewModel extends ViewModel {
         note.setCreatedAt(now);
         note.setUpdatedAt(now);
 
-        personalNoteRepository.insert(note);
-
-        latestPersonalNotes.add(note);
-        rebuildList();
-
-        return note;
-    }
-
-    public void updatePersonalNote(NoteListItem item, String newTitle, String newHtmlContent) {
-        if (item == null || item.getType() != NoteListItem.TYPE_PERSONAL_NOTE) return;
-
-        PersonalNote note = findPersonalNote(item.getId());
-        if (note == null) return;
-
-        updatePersonalNote(item, newTitle, newHtmlContent, note.getModuleId(), note.getFolderId());
+        personalNoteRepository.insert(note, success -> {
+            new Handler(Looper.getMainLooper()).post(() -> {
+                if (success) {
+                    if (callback != null) callback.onSuccess(note);
+                } else {
+                    if (callback != null) callback.onError("Failed to save note");
+                }
+            });
+        });
     }
 
     public void updatePersonalNote(NoteListItem item,
                                    String newTitle,
                                    String newHtmlContent,
                                    String moduleIdOrNull,
-                                   String folderIdOrNull) {
-        if (item == null || item.getType() != NoteListItem.TYPE_PERSONAL_NOTE) return;
+                                   String folderIdOrNull,
+                                   PersonalNoteCallback callback) {
+        if (item == null || item.getType() != NoteListItem.TYPE_PERSONAL_NOTE) {
+            if (callback != null) callback.onError("Invalid note");
+            return;
+        }
 
         PersonalNote note = findPersonalNote(item.getId());
-        if (note == null) return;
+        if (note == null) {
+            if (callback != null) callback.onError("Note not found");
+            return;
+        }
 
         note.setTitle(newTitle);
         note.setContent(newHtmlContent);
@@ -392,24 +393,23 @@ public class NotesViewModel extends ViewModel {
         note.setFolderId(normalizeNullableId(folderIdOrNull));
         note.setUpdatedAt(System.currentTimeMillis());
 
-        personalNoteRepository.update(note);
-
-        for (int i = 0; i < latestPersonalNotes.size(); i++) {
-            PersonalNote existing = latestPersonalNotes.get(i);
-            if (existing.getNoteId() != null && existing.getNoteId().equals(note.getNoteId())) {
-                latestPersonalNotes.set(i, note);
-                break;
-            }
-        }
-
-        rebuildList();
+        personalNoteRepository.update(note, success -> {
+            new Handler(Looper.getMainLooper()).post(() -> {
+                if (success) {
+                    if (callback != null) callback.onSuccess(note);
+                } else {
+                    if (callback != null) callback.onError("Failed to update note");
+                }
+            });
+        });
     }
 
-    public PersonalNoteAttachment createUploadingPersonalAttachment(
+    public void createUploadingPersonalAttachment(
             String noteId,
             String fileName,
             String fileType,
-            long fileSizeBytes
+            long fileSizeBytes,
+            PersonalNoteAttachmentCallback callback
     ) {
         PersonalNoteAttachment attachment = new PersonalNoteAttachment(
                 UUID.randomUUID().toString(),
@@ -422,23 +422,40 @@ public class NotesViewModel extends ViewModel {
         attachment.setFileSizeBytes(fileSizeBytes);
         attachment.setUploadStatus("UPLOADING");
 
-        personalNoteAttachmentRepository.insert(attachment);
-
-        return attachment;
+        personalNoteAttachmentRepository.insert(attachment, success -> {
+            new Handler(Looper.getMainLooper()).post(() -> {
+                if (success) {
+                    if (callback != null) callback.onSuccess(attachment);
+                } else {
+                    if (callback != null) callback.onError("Failed to save attachment");
+                }
+            });
+        });
     }
 
     public void markPersonalAttachmentUploaded(
             PersonalNoteAttachment attachment,
             String storagePath,
-            String downloadUrl
+            String downloadUrl,
+            PersonalNoteAttachmentCallback callback
     ) {
-        if (attachment == null) return;
+        if (attachment == null) {
+            if (callback != null) callback.onError("Attachment is null");
+            return;
+        }
 
         attachment.setStoragePath(storagePath);
         attachment.setDownloadUrl(downloadUrl);
         attachment.setUploadStatus("DONE");
 
-        personalNoteAttachmentRepository.update(attachment);
+        personalNoteAttachmentRepository.update(attachment, success -> {
+            new Handler(Looper.getMainLooper()).post(() -> {
+                if (callback != null) {
+                    if (success) callback.onSuccess(attachment);
+                    else callback.onError("Failed to finalize attachment");
+                }
+            });
+        });
     }
 
     public void markPersonalAttachmentFailed(PersonalNoteAttachment attachment) {
@@ -446,7 +463,7 @@ public class NotesViewModel extends ViewModel {
 
         attachment.setUploadStatus("FAILED");
 
-        personalNoteAttachmentRepository.update(attachment);
+        personalNoteAttachmentRepository.update(attachment, null);
     }
 
     public void deletePersonalAttachment(PersonalNoteAttachment attachment) {
@@ -465,15 +482,18 @@ public class NotesViewModel extends ViewModel {
             note.setTitle(newTitle.trim());
             note.setUpdatedAt(System.currentTimeMillis());
 
-            personalNoteRepository.update(note);
-
-            for (int i = 0; i < latestPersonalNotes.size(); i++) {
-                PersonalNote existing = latestPersonalNotes.get(i);
-                if (existing.getNoteId() != null && existing.getNoteId().equals(note.getNoteId())) {
-                    latestPersonalNotes.set(i, note);
-                    break;
+            personalNoteRepository.update(note, success -> {
+                if (success) {
+                    for (int i = 0; i < latestPersonalNotes.size(); i++) {
+                        PersonalNote existing = latestPersonalNotes.get(i);
+                        if (existing.getNoteId() != null && existing.getNoteId().equals(note.getNoteId())) {
+                            latestPersonalNotes.set(i, note);
+                            break;
+                        }
+                    }
+                    rebuildList();
                 }
-            }
+            });
 
         } else {
             ModuleNote note = findModuleNote(item.getId());
@@ -490,9 +510,9 @@ public class NotesViewModel extends ViewModel {
                     break;
                 }
             }
-        }
 
-        rebuildList();
+            rebuildList();
+        }
     }
 
     public void deleteNote(NoteListItem item) {
@@ -541,10 +561,10 @@ public class NotesViewModel extends ViewModel {
                 String moduleName = getModuleName(note.getModuleId());
                 String folderName = getFolderName(note.getFolderId());
 
-                String subtitle = moduleName + " • " + readableStatus(note.getUploadStatus());
+                String subtitle = moduleName + " \u2022 " + readableStatus(note.getUploadStatus());
 
                 if (folderName != null && !folderName.trim().isEmpty()) {
-                    subtitle = subtitle + " • 📁 " + folderName;
+                    subtitle = subtitle + " \u2022 \uD83D\uDCC1 " + folderName;
                 }
 
                 NoteListItem item = new NoteListItem(
@@ -578,7 +598,7 @@ public class NotesViewModel extends ViewModel {
                 String subtitle = moduleName;
 
                 if (folderName != null && !folderName.trim().isEmpty()) {
-                    subtitle = subtitle + " • 📁 " + folderName;
+                    subtitle = subtitle + " \u2022 \uD83D\uDCC1 " + folderName;
                 }
 
                 String content = note.getContent() == null ? "" : note.getContent();
@@ -600,7 +620,7 @@ public class NotesViewModel extends ViewModel {
             }
         }
 
-        displayNotes.setValue(combined);
+        displayNotes.postValue(combined);
     }
 
     private boolean matchesSelectedModule(String moduleId) {
@@ -695,5 +715,15 @@ public class NotesViewModel extends ViewModel {
 
     private String normalizeNullableId(String value) {
         return value == null || value.trim().isEmpty() ? null : value.trim();
+    }
+
+    public interface PersonalNoteCallback {
+        void onSuccess(PersonalNote note);
+        void onError(String error);
+    }
+
+    public interface PersonalNoteAttachmentCallback {
+        void onSuccess(PersonalNoteAttachment attachment);
+        void onError(String error);
     }
 }

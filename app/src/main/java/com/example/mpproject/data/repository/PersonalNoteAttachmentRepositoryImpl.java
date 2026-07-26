@@ -1,5 +1,7 @@
 package com.example.mpproject.data.repository;
 
+import android.util.Log;
+
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Transformations;
 
@@ -11,6 +13,7 @@ import com.example.mpproject.domain.repository.PersonalNoteAttachmentRepository;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class PersonalNoteAttachmentRepositoryImpl implements PersonalNoteAttachmentRepository {
 
@@ -21,18 +24,40 @@ public class PersonalNoteAttachmentRepositoryImpl implements PersonalNoteAttachm
     }
 
     @Override
-    public void insert(PersonalNoteAttachment attachment) {
-        AppDatabase.databaseWriteExecutor.execute(() -> attachmentDao.insert(toEntity(attachment)));
+    public void insert(PersonalNoteAttachment attachment, Consumer<Boolean> callback) {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            try {
+                attachmentDao.insert(toEntity(attachment));
+                if (callback != null) callback.accept(true);
+            } catch (Exception e) {
+                Log.e("PersonalNoteAttachRepo", "Insert failed", e);
+                if (callback != null) callback.accept(false);
+            }
+        });
     }
 
     @Override
-    public void update(PersonalNoteAttachment attachment) {
-        AppDatabase.databaseWriteExecutor.execute(() -> attachmentDao.insert(toEntity(attachment)));
+    public void update(PersonalNoteAttachment attachment, Consumer<Boolean> callback) {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            try {
+                attachmentDao.insert(toEntity(attachment));
+                if (callback != null) callback.accept(true);
+            } catch (Exception e) {
+                Log.e("PersonalNoteAttachRepo", "Update failed", e);
+                if (callback != null) callback.accept(false);
+            }
+        });
     }
 
     @Override
     public void delete(PersonalNoteAttachment attachment) {
-        AppDatabase.databaseWriteExecutor.execute(() -> attachmentDao.deleteById(attachment.getAttachmentId()));
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            try {
+                attachmentDao.deleteById(attachment.getAttachmentId());
+            } catch (Exception e) {
+                Log.e("PersonalNoteAttachRepo", "Delete failed", e);
+            }
+        });
     }
 
     @Override

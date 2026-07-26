@@ -8,6 +8,7 @@ import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -25,6 +26,7 @@ import com.example.mpproject.presentation.viewmodel.AuthViewModel;
 import com.example.mpproject.presentation.viewmodel.ViewModelFactory;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -75,6 +77,8 @@ public class SettingsFragment extends Fragment {
 
         binding.saveProfileButton.setOnClickListener(v -> saveProfile());
 
+        binding.btnChangePassword.setOnClickListener(v -> showChangePasswordDialog());
+
         SharedPreferences themePrefs = requireContext()
                 .getSharedPreferences("app_prefs", requireContext().MODE_PRIVATE);
         boolean savedDarkMode = themePrefs.getBoolean("pref_dark_mode", false);
@@ -124,6 +128,93 @@ public class SettingsFragment extends Fragment {
         binding.editLastNameText.setText(lastName);
         binding.editEmailText.setText(email);
         binding.editSchoolText.setText(school);
+    }
+
+    private void showChangePasswordDialog() {
+        LinearLayout layout = new LinearLayout(requireContext());
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(dp(20), dp(16), dp(20), 0);
+
+        com.google.android.material.textfield.TextInputLayout currentLayout = new com.google.android.material.textfield.TextInputLayout(requireContext());
+        currentLayout.setHint("Current password");
+        currentLayout.setBoxBackgroundMode(com.google.android.material.textfield.TextInputLayout.BOX_BACKGROUND_OUTLINE);
+        currentLayout.setBoxCornerRadii(12, 12, 12, 12);
+        currentLayout.setPasswordVisibilityToggleEnabled(true);
+
+        com.google.android.material.textfield.TextInputEditText currentInput = new com.google.android.material.textfield.TextInputEditText(requireContext());
+        currentInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        currentInput.setMaxLines(1);
+        currentLayout.addView(currentInput);
+
+        com.google.android.material.textfield.TextInputLayout newLayout = new com.google.android.material.textfield.TextInputLayout(requireContext());
+        newLayout.setHint("New password");
+        newLayout.setBoxBackgroundMode(com.google.android.material.textfield.TextInputLayout.BOX_BACKGROUND_OUTLINE);
+        newLayout.setBoxCornerRadii(12, 12, 12, 12);
+        newLayout.setPasswordVisibilityToggleEnabled(true);
+
+        com.google.android.material.textfield.TextInputEditText newInput = new com.google.android.material.textfield.TextInputEditText(requireContext());
+        newInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        newInput.setMaxLines(1);
+        newLayout.addView(newInput);
+
+        com.google.android.material.textfield.TextInputLayout confirmLayout = new com.google.android.material.textfield.TextInputLayout(requireContext());
+        confirmLayout.setHint("Confirm new password");
+        confirmLayout.setBoxBackgroundMode(com.google.android.material.textfield.TextInputLayout.BOX_BACKGROUND_OUTLINE);
+        confirmLayout.setBoxCornerRadii(12, 12, 12, 12);
+        confirmLayout.setPasswordVisibilityToggleEnabled(true);
+
+        com.google.android.material.textfield.TextInputEditText confirmInput = new com.google.android.material.textfield.TextInputEditText(requireContext());
+        confirmInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        confirmInput.setMaxLines(1);
+        confirmLayout.addView(confirmInput);
+
+        LinearLayout.LayoutParams fieldParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        fieldParams.setMargins(0, 0, 0, dp(12));
+        layout.addView(currentLayout, fieldParams);
+        layout.addView(newLayout, fieldParams);
+        layout.addView(confirmLayout, fieldParams);
+
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Change Password")
+                .setView(layout)
+                .setPositiveButton("Save", (dialog, which) -> {
+                    String currentPw = currentInput.getText() != null ? currentInput.getText().toString() : "";
+                    String newPw = newInput.getText() != null ? newInput.getText().toString() : "";
+                    String confirmPw = confirmInput.getText() != null ? confirmInput.getText().toString() : "";
+
+                    if (currentPw.isEmpty()) {
+                        Toast.makeText(requireContext(), "Enter your current password", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    if (newPw.isEmpty()) {
+                        Toast.makeText(requireContext(), "Enter a new password", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    if (newPw.length() < 8) {
+                        Toast.makeText(requireContext(), "Password must be at least 8 characters", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    if (!newPw.equals(confirmPw)) {
+                        Toast.makeText(requireContext(), "Passwords do not match", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    authViewModel.changePassword(currentPw, newPw)
+                            .observe(getViewLifecycleOwner(), success -> {
+                                if (success != null && success) {
+                                    Toast.makeText(requireContext(), "Password changed successfully", Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private int dp(int value) {
+        return (int) (value * getResources().getDisplayMetrics().density);
     }
 
     private void saveProfile() {

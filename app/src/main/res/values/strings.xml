@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">StudyApp</string>
+    <string name="app_name">Academic Weapon</string>
 
     <!-- Bottom nav labels -->
     <string name="nav_home">Home</string>

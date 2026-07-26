@@ -19,8 +19,6 @@ import com.example.mpproject.presentation.view.calendar.CalendarDayItem;
 
 import java.util.List;
 
-// [Adapter] Renders the 42-cell (6-row × 7-column) month grid.
-// Each cell is a CalendarDayItem; the GridLayoutManager handles the 7-column split.
 public class CalendarGridAdapter extends ListAdapter<CalendarDayItem, CalendarGridAdapter.DayViewHolder> {
 
     public interface OnDayClickListener {
@@ -31,10 +29,8 @@ public class CalendarGridAdapter extends ListAdapter<CalendarDayItem, CalendarGr
             new DiffUtil.ItemCallback<CalendarDayItem>() {
                 @Override
                 public boolean areItemsTheSame(@NonNull CalendarDayItem oldItem, @NonNull CalendarDayItem newItem) {
-                    // Padding cells are interchangeable blank slots
                     if (oldItem.isPadding() && newItem.isPadding()) return true;
                     if (oldItem.isPadding() || newItem.isPadding()) return false;
-                    // Real days are the same slot when they represent the same day in the same month context
                     return oldItem.getDayOfMonth() == newItem.getDayOfMonth()
                             && oldItem.isCurrentMonth() == newItem.isCurrentMonth();
                 }
@@ -75,11 +71,29 @@ public class CalendarGridAdapter extends ListAdapter<CalendarDayItem, CalendarGr
 
         private final TextView tvDay;
         private final LinearLayout llDots;
+        private int cachedThemeColor = 0;
+        // Pre-created dot views to avoid allocation per bind
+        private static final int MAX_DOTS = 3;
+        private final View[] dotViews = new View[MAX_DOTS];
+        private final GradientDrawable[] dotDrawables = new GradientDrawable[MAX_DOTS];
 
         DayViewHolder(@NonNull View itemView) {
             super(itemView);
             tvDay  = itemView.findViewById(R.id.tv_day_number);
             llDots = itemView.findViewById(R.id.ll_dots);
+            Context ctx = itemView.getContext();
+            for (int i = 0; i < MAX_DOTS; i++) {
+                View dot = new View(ctx);
+                int size = dpToPx(ctx, 6);
+                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(size, size);
+                lp.setMargins(2, 0, 2, 0);
+                dot.setLayoutParams(lp);
+                GradientDrawable d = new GradientDrawable();
+                d.setShape(GradientDrawable.OVAL);
+                dot.setBackground(d);
+                dotViews[i] = dot;
+                dotDrawables[i] = d;
+            }
         }
 
         void bind(CalendarDayItem item) {
@@ -95,7 +109,6 @@ public class CalendarGridAdapter extends ListAdapter<CalendarDayItem, CalendarGr
 
             tvDay.setText(String.valueOf(item.getDayOfMonth()));
 
-            // Background: filled circle for selected, outline circle for today, none otherwise
             if (item.isSelected()) {
                 tvDay.setBackground(ContextCompat.getDrawable(ctx, R.drawable.bg_day_selected));
                 tvDay.setTextColor(ContextCompat.getColor(ctx, R.color.on_primary));
@@ -104,50 +117,43 @@ public class CalendarGridAdapter extends ListAdapter<CalendarDayItem, CalendarGr
                 tvDay.setTextColor(ContextCompat.getColor(ctx, R.color.primary_light));
             } else {
                 tvDay.setBackground(null);
-                // Full opacity for current month days; 33% opacity for out-of-month padding days
-                int baseColor = getThemeColor(ctx, com.google.android.material.R.attr.colorOnSurface);
+                if (cachedThemeColor == 0) {
+                    int[] attrs = {com.google.android.material.R.attr.colorOnSurface};
+                    android.content.res.TypedArray ta = ctx.obtainStyledAttributes(attrs);
+                    cachedThemeColor = ta.getColor(0, 0xFF808080);
+                    ta.recycle();
+                }
+                int baseColor = cachedThemeColor;
                 tvDay.setTextColor(item.isCurrentMonth() ? baseColor : (baseColor & 0x00FFFFFF) | 0x55000000);
             }
 
-            // Dot row — rebuild from scratch each bind
             llDots.removeAllViews();
-            for (int colorRes : item.getEventDotColors()) {
-                View dot = new View(ctx);
-                int size = dpToPx(ctx, 6);
-                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(size, size);
-                lp.setMargins(2, 0, 2, 0);
-                dot.setLayoutParams(lp);
-                GradientDrawable d = new GradientDrawable();
-                d.setShape(GradientDrawable.OVAL);
-                d.setColor(ContextCompat.getColor(ctx, colorRes));
-                dot.setBackground(d);
-                llDots.addView(dot);
+            List<Integer> colors = item.getEventDotColors();
+            int dotCount = Math.min(colors.size(), MAX_DOTS);
+            if (item.hasTodo() && dotCount < MAX_DOTS) {
+                dotCount++;
             }
 
-            // Todo dot — neutral grey added after event dots if space allows
-            if (item.hasTodo() && item.getEventDotColors().size() < 3) {
-                View dot = new View(ctx);
-                int size = dpToPx(ctx, 6);
-                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(size, size);
-                lp.setMargins(2, 0, 2, 0);
-                dot.setLayoutParams(lp);
-                GradientDrawable d = new GradientDrawable();
-                d.setShape(GradientDrawable.OVAL);
-                d.setColor(ContextCompat.getColor(ctx, R.color.event_todo));
-                dot.setBackground(d);
-                llDots.addView(dot);
+            for (int i = 0; i < dotCount && i < MAX_DOTS; i++) {
+                int colorRes;
+                if (i < colors.size()) {
+                    colorRes = colors.get(i);
+                } else {
+                    colorRes = R.color.event_todo;
+                }
+                dotDrawables[i].setColor(ContextCompat.getColor(ctx, colorRes));
+                if (dotViews[i].getParent() == null) {
+                    llDots.addView(dotViews[i]);
+                }
+            }
+
+            for (int i = dotCount; i < MAX_DOTS; i++) {
+                if (dotViews[i].getParent() != null) {
+                    llDots.removeView(dotViews[i]);
+                }
             }
 
             itemView.setOnClickListener(v -> listener.onDayClick(item.getDayOfMonth()));
-        }
-
-        // Resolve a theme attribute to a color int
-        private int getThemeColor(Context ctx, int attrRes) {
-            int[] attrs = {attrRes};
-            android.content.res.TypedArray ta = ctx.obtainStyledAttributes(attrs);
-            int color = ta.getColor(0, 0xFF808080);
-            ta.recycle();
-            return color;
         }
 
         private int dpToPx(Context ctx, int dp) {

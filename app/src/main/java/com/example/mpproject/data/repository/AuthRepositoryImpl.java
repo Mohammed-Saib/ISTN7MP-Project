@@ -131,6 +131,41 @@ public class AuthRepositoryImpl implements AuthRepository {
         return success;
     }
 
+    @Override
+    public LiveData<Boolean> changePassword(String currentPassword, String newPassword) {
+        MutableLiveData<Boolean> success = new MutableLiveData<>();
+        errorLiveData.setValue(null);
+
+        String userId = LocalSessionManager.getCurrentUserId(context);
+        if (userId == null) {
+            errorLiveData.setValue("No user logged in.");
+            success.setValue(false);
+            return success;
+        }
+
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            UserEntity user = userDao.getByIdSync(userId);
+            if (user == null) {
+                errorLiveData.postValue("User not found.");
+                success.postValue(false);
+                return;
+            }
+
+            String currentHashed = hashPassword(currentPassword);
+            if (!currentHashed.equals(user.getPassword())) {
+                errorLiveData.postValue("Current password is incorrect.");
+                success.postValue(false);
+                return;
+            }
+
+            String newHashed = hashPassword(newPassword);
+            userDao.updatePassword(userId, newHashed);
+            success.postValue(true);
+        });
+
+        return success;
+    }
+
     private String hashPassword(String password) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");

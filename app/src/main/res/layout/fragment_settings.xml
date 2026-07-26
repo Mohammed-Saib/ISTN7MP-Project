@@ -196,6 +196,15 @@
                         android:text="Save Profile"
                         app:cornerRadius="14dp" />
 
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_change_password"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:layout_marginTop="12dp"
+                        android:text="Change Password"
+                        app:cornerRadius="14dp" />
+
                 </LinearLayout>
 
                 <!-- Edit Profile / Cancel toggle button (always at bottom of card) -->

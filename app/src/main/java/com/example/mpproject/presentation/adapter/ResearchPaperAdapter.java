@@ -7,36 +7,45 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.mpproject.R;
 import com.example.mpproject.data.local.entity.ResearchPaperEntity;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Objects;
 
-public class ResearchPaperAdapter extends RecyclerView.Adapter<ResearchPaperAdapter.ResearchPaperViewHolder> {
+public class ResearchPaperAdapter extends ListAdapter<ResearchPaperEntity, ResearchPaperAdapter.ResearchPaperViewHolder> {
 
     public interface OnResearchPaperClickListener {
         void onPaperClick(ResearchPaperEntity paper);
         void onPaperLongClick(ResearchPaperEntity paper);
     }
 
-    private final List<ResearchPaperEntity> papers = new ArrayList<>();
+    private static final DiffUtil.ItemCallback<ResearchPaperEntity> DIFF =
+            new DiffUtil.ItemCallback<ResearchPaperEntity>() {
+                @Override
+                public boolean areItemsTheSame(@NonNull ResearchPaperEntity oldItem, @NonNull ResearchPaperEntity newItem) {
+                    return Objects.equals(oldItem.getPaperId(), newItem.getPaperId());
+                }
+
+                @Override
+                public boolean areContentsTheSame(@NonNull ResearchPaperEntity oldItem, @NonNull ResearchPaperEntity newItem) {
+                    return Objects.equals(oldItem.getTitle(), newItem.getTitle())
+                            && Objects.equals(oldItem.getAuthors(), newItem.getAuthors())
+                            && Objects.equals(oldItem.getYear(), newItem.getYear())
+                            && Objects.equals(oldItem.getCategory(), newItem.getCategory())
+                            && Objects.equals(oldItem.getStatus(), newItem.getStatus())
+                            && oldItem.isImportant() == newItem.isImportant()
+                            && Objects.equals(oldItem.getSummary(), newItem.getSummary());
+                }
+            };
+
     private final OnResearchPaperClickListener listener;
 
     public ResearchPaperAdapter(OnResearchPaperClickListener listener) {
+        super(DIFF);
         this.listener = listener;
-    }
-
-    public void submitList(List<ResearchPaperEntity> newPapers) {
-        papers.clear();
-
-        if (newPapers != null) {
-            papers.addAll(newPapers);
-        }
-
-        notifyDataSetChanged();
     }
 
     @NonNull
@@ -49,13 +58,7 @@ public class ResearchPaperAdapter extends RecyclerView.Adapter<ResearchPaperAdap
 
     @Override
     public void onBindViewHolder(@NonNull ResearchPaperViewHolder holder, int position) {
-        ResearchPaperEntity paper = papers.get(position);
-        holder.bind(paper);
-    }
-
-    @Override
-    public int getItemCount() {
-        return papers.size();
+        holder.bind(getItem(position));
     }
 
     class ResearchPaperViewHolder extends RecyclerView.ViewHolder {
@@ -81,7 +84,7 @@ public class ResearchPaperAdapter extends RecyclerView.Adapter<ResearchPaperAdap
 
             String authors = paper.getAuthors().isEmpty() ? "Unknown author" : paper.getAuthors();
             String year = paper.getYear().isEmpty() ? "No year" : paper.getYear();
-            txtPaperMeta.setText(authors + " • " + year);
+            txtPaperMeta.setText(authors + " \u2022 " + year);
 
             String category = paper.getCategory().isEmpty() ? "No category" : paper.getCategory();
             txtPaperCategory.setText("Theme: " + category);
@@ -103,7 +106,7 @@ public class ResearchPaperAdapter extends RecyclerView.Adapter<ResearchPaperAdap
             }
 
             if (paper.isImportant()) {
-                statusText += " • Important";
+                statusText += " \u2022 Important";
             }
 
             txtPaperStatus.setText(statusText);

@@ -1311,12 +1311,13 @@ public class NotesFragment extends Fragment {
         cardParams.setMargins(0, dp(14), 0, 0);
         editorLayout.addView(noteCard, cardParams);
         Runnable attachAction = () -> {
-            ensureDraftNoteExists(titleInput, contentInput, moduleSpinner, folderSpinner, true);
-            if (!observingDraftAttachments[0] && activeAttachmentNoteId != null) {
-                observeAttachmentCount(activeAttachmentNoteId, attachmentStatus);
-                observingDraftAttachments[0] = true;
-            }
-            launchPersonalAttachmentPicker();
+            ensureDraftNoteExists(titleInput, contentInput, moduleSpinner, folderSpinner, true, () -> {
+                if (!observingDraftAttachments[0] && activeAttachmentNoteId != null) {
+                    observeAttachmentCount(activeAttachmentNoteId, attachmentStatus);
+                    observingDraftAttachments[0] = true;
+                }
+                launchPersonalAttachmentPicker();
+            });
         };
         LinearLayout attachmentRow = createAttachmentControlRow(attachmentStatus, attachAction);
         HorizontalScrollView formatScroll = createFormattingToolbar(contentInput, null);
@@ -1325,8 +1326,7 @@ public class NotesFragment extends Fragment {
                 Toast.makeText(requireContext(), "Attach a file first", Toast.LENGTH_SHORT).show();
                 return;
             }
-            boolean saved = savePersonalNoteFromEditor(titleInput, contentInput, moduleSpinner, folderSpinner);
-            if (saved) {
+            savePersonalNoteFromEditor(titleInput, contentInput, moduleSpinner, folderSpinner, () -> {
                 String title = titleInput.getText().toString().trim();
                 String htmlContent = getCleanHtmlFromEditor(contentInput);
                 String moduleName = getSelectedPersonalModuleId(moduleSpinner) == null ? "Personal" : "Module";
@@ -1347,7 +1347,7 @@ public class NotesFragment extends Fragment {
                 temporaryAttachments.clear();
                 dialog.dismiss();
                 showPersonalNoteViewer(viewItem);
-            }
+            });
         });
         ScrollView editorScroll = new ScrollView(requireContext());
         editorScroll.setFillViewport(true);
@@ -1382,13 +1382,12 @@ public class NotesFragment extends Fragment {
             return false;
         });
         btnSave.setOnClickListener(v -> {
-            boolean saved = savePersonalNoteFromEditor(titleInput, contentInput, moduleSpinner, folderSpinner);
-            if (saved) {
+            savePersonalNoteFromEditor(titleInput, contentInput, moduleSpinner, folderSpinner, () -> {
                 noteSaved[0] = true;
                 activeAttachmentBelongsToUnsavedDraft = false;
                 temporaryAttachments.clear();
                 dialog.dismiss();
-            }
+            });
         });
         dialog.setOnDismissListener(d -> {
             if (!noteSaved[0]) {
@@ -1597,19 +1596,29 @@ public class NotesFragment extends Fragment {
                 String newHtml = getCleanHtmlFromEditor(contentInput);
                 String selectedModuleId = getSelectedPersonalModuleId(moduleSpinner);
                 String selectedFolderId = getSelectedFolderIdFromSpinner(folderSpinner);
-                viewModel.updatePersonalNote(item, newTitle, newHtml, selectedModuleId, selectedFolderId);
-                folderSelectionTouched[0] = false;
+                viewModel.updatePersonalNote(item, newTitle, newHtml, selectedModuleId, selectedFolderId,
+                        new NotesViewModel.PersonalNoteCallback() {
+                            @Override
+                            public void onSuccess(PersonalNote note) {
+                                folderSelectionTouched[0] = false;
 
-                savedTitle[0] = newTitle;
-                savedHtml[0] = newHtml;
-                topTitle.setText(newTitle);
-                titleView.setText(newTitle);
-                bodyView.setText(Html.fromHtml(newHtml, Html.FROM_HTML_MODE_LEGACY));
-                hasUnsavedChanges[0] = false;
-                isEditMode[0] = false;
-                attachmentList.setVisibility(View.VISIBLE);
-                switchToViewMode(btnMode, btnSave, titleView, viewCard, titleInput, editCard, formatScroll, folderModuleRow);
-                Toast.makeText(requireContext(), "Saved and showing attachments", Toast.LENGTH_SHORT).show();
+                                savedTitle[0] = newTitle;
+                                savedHtml[0] = newHtml;
+                                topTitle.setText(newTitle);
+                                titleView.setText(newTitle);
+                                bodyView.setText(Html.fromHtml(newHtml, Html.FROM_HTML_MODE_LEGACY));
+                                hasUnsavedChanges[0] = false;
+                                isEditMode[0] = false;
+                                attachmentList.setVisibility(View.VISIBLE);
+                                switchToViewMode(btnMode, btnSave, titleView, viewCard, titleInput, editCard, formatScroll, folderModuleRow);
+                                Toast.makeText(requireContext(), "Saved and showing attachments", Toast.LENGTH_SHORT).show();
+                            }
+
+                            @Override
+                            public void onError(String error) {
+                                safeToast(error, Toast.LENGTH_LONG);
+                            }
+                        });
             }
         });
         TextWatcher dirtyWatcher = new TextWatcher() {
@@ -1664,19 +1673,29 @@ public class NotesFragment extends Fragment {
             String newHtml = getCleanHtmlFromEditor(contentInput);
             String selectedModuleId = getSelectedPersonalModuleId(moduleSpinner);
             String selectedFolderId = getSelectedFolderIdFromSpinner(folderSpinner);
-            viewModel.updatePersonalNote(item, newTitle, newHtml, selectedModuleId, selectedFolderId);
-            folderSelectionTouched[0] = false;
+            viewModel.updatePersonalNote(item, newTitle, newHtml, selectedModuleId, selectedFolderId,
+                    new NotesViewModel.PersonalNoteCallback() {
+                        @Override
+                        public void onSuccess(PersonalNote note) {
+                            folderSelectionTouched[0] = false;
 
-            savedTitle[0] = newTitle;
-            savedHtml[0] = newHtml;
-            topTitle.setText(newTitle);
-            titleView.setText(newTitle);
-            bodyView.setText(Html.fromHtml(newHtml, Html.FROM_HTML_MODE_LEGACY));
-            hasUnsavedChanges[0] = false;
-            isEditMode[0] = false;
-            attachmentList.setVisibility(View.VISIBLE);
-            switchToViewMode(btnMode, btnSave, titleView, viewCard, titleInput, editCard, formatScroll, folderModuleRow);
-            Toast.makeText(requireContext(), "Note saved", Toast.LENGTH_SHORT).show();
+                            savedTitle[0] = newTitle;
+                            savedHtml[0] = newHtml;
+                            topTitle.setText(newTitle);
+                            titleView.setText(newTitle);
+                            bodyView.setText(Html.fromHtml(newHtml, Html.FROM_HTML_MODE_LEGACY));
+                            hasUnsavedChanges[0] = false;
+                            isEditMode[0] = false;
+                            attachmentList.setVisibility(View.VISIBLE);
+                            switchToViewMode(btnMode, btnSave, titleView, viewCard, titleInput, editCard, formatScroll, folderModuleRow);
+                            Toast.makeText(requireContext(), "Note saved", Toast.LENGTH_SHORT).show();
+                        }
+
+                        @Override
+                        public void onError(String error) {
+                            safeToast(error, Toast.LENGTH_LONG);
+                        }
+                    });
         });
         btnBack.setOnClickListener(v -> {
             if (isEditMode[0] && hasUnsavedChanges[0]) {
@@ -1741,13 +1760,12 @@ public class NotesFragment extends Fragment {
                 .setTitle("Save note?")
                 .setMessage("Do you want to save this note before leaving?")
                 .setPositiveButton("Save", (d, which) -> {
-                    boolean saved = savePersonalNoteFromEditor(titleInput, contentInput, moduleSpinner, folderSpinner);
-                    if (saved) {
+                    savePersonalNoteFromEditor(titleInput, contentInput, moduleSpinner, folderSpinner, () -> {
                         noteSaved[0] = true;
                         activeAttachmentBelongsToUnsavedDraft = false;
                         temporaryAttachments.clear();
                         dialog.dismiss();
-                    }
+                    });
                 })
                 .setNegativeButton("Discard", (d, which) -> {
                     cleanupTemporaryAttachments();
@@ -1758,15 +1776,16 @@ public class NotesFragment extends Fragment {
                 .setNeutralButton("Cancel", null)
                 .show();
     }
-    private boolean savePersonalNoteFromEditor(EditText titleInput,
-                                               EditText contentInput,
-                                               Spinner moduleSpinner,
-                                               Spinner folderSpinner) {
+    private void savePersonalNoteFromEditor(EditText titleInput,
+                                            EditText contentInput,
+                                            Spinner moduleSpinner,
+                                            Spinner folderSpinner,
+                                            Runnable onSuccess) {
         String title = titleInput.getText().toString().trim();
 
         if (title.isEmpty()) {
             Toast.makeText(requireContext(), "Title is required", Toast.LENGTH_SHORT).show();
-            return false;
+            return;
         }
 
         String htmlContent = getCleanHtmlFromEditor(contentInput);
@@ -1775,24 +1794,46 @@ public class NotesFragment extends Fragment {
         String folderId = getSelectedFolderIdFromSpinner(folderSpinner);
 
         if (temporaryDraftItem != null) {
-            viewModel.updatePersonalNote(temporaryDraftItem, title, htmlContent, moduleId, folderId);
-            return true;
+            viewModel.updatePersonalNote(temporaryDraftItem, title, htmlContent, moduleId, folderId,
+                    new NotesViewModel.PersonalNoteCallback() {
+                        @Override
+                        public void onSuccess(PersonalNote note) {
+                            if (onSuccess != null) onSuccess.run();
+                        }
+
+                        @Override
+                        public void onError(String error) {
+                            safeToast(error, Toast.LENGTH_LONG);
+                        }
+                    });
+            return;
         }
 
+        viewModel.addPersonalNote(title, htmlContent, moduleId, folderId,
+                new NotesViewModel.PersonalNoteCallback() {
+                    @Override
+                    public void onSuccess(PersonalNote note) {
+                        temporaryDraftItem = makeTemporaryItem(note, htmlContent);
+                        activeAttachmentNoteId = note.getNoteId();
+                        if (onSuccess != null) onSuccess.run();
+                    }
 
-        PersonalNote note = viewModel.addPersonalNote(title, htmlContent, moduleId, folderId);
-
-        temporaryDraftItem = makeTemporaryItem(note, htmlContent);
-        activeAttachmentNoteId = note.getNoteId();
-
-        return true;
+                    @Override
+                    public void onError(String error) {
+                        safeToast(error, Toast.LENGTH_LONG);
+                    }
+                });
     }
     private void ensureDraftNoteExists(EditText titleInput,
                                        EditText contentInput,
                                        Spinner moduleSpinner,
                                        Spinner folderSpinner,
-                                       boolean showMessage) {
-        if (activeAttachmentNoteId != null && !activeAttachmentNoteId.trim().isEmpty()) return;
+                                       boolean showMessage,
+                                       Runnable onDone) {
+        if (activeAttachmentNoteId != null && !activeAttachmentNoteId.trim().isEmpty()) {
+            if (onDone != null) onDone.run();
+            return;
+        }
 
         String title = titleInput.getText().toString().trim();
         if (title.isEmpty()) title = "Untitled note";
@@ -1801,17 +1842,27 @@ public class NotesFragment extends Fragment {
         String moduleId = getSelectedPersonalModuleId(moduleSpinner);
         String folderId = getSelectedFolderIdFromSpinner(folderSpinner);
 
-        PersonalNote note = viewModel.addPersonalNote(title, htmlContent, moduleId, folderId);
+        viewModel.addPersonalNote(title, htmlContent, moduleId, folderId,
+                new NotesViewModel.PersonalNoteCallback() {
+                    @Override
+                    public void onSuccess(PersonalNote note) {
+                        temporaryDraftItem = makeTemporaryItem(note, htmlContent);
+                        activeAttachmentNoteId = note.getNoteId();
+                        activeAttachmentBelongsToUnsavedDraft = true;
 
-        temporaryDraftItem = makeTemporaryItem(note, htmlContent);
-        activeAttachmentNoteId = note.getNoteId();
-        activeAttachmentBelongsToUnsavedDraft = true;
+                        if (showMessage) {
+                            Toast.makeText(requireContext(),
+                                    "Temporary note created so the attachment can upload. Discard will remove it.",
+                                    Toast.LENGTH_LONG).show();
+                        }
+                        if (onDone != null) onDone.run();
+                    }
 
-        if (showMessage) {
-            Toast.makeText(requireContext(),
-                    "Temporary note created so the attachment can upload. Discard will remove it.",
-                    Toast.LENGTH_LONG).show();
-        }
+                    @Override
+                    public void onError(String error) {
+                        safeToast(error, Toast.LENGTH_LONG);
+                    }
+                });
     }
     private NoteListItem makeTemporaryItem(PersonalNote note, String contentPreview) {
         String moduleName = note.getModuleId() == null || note.getModuleId().trim().isEmpty()
@@ -2461,77 +2512,95 @@ public class NotesFragment extends Fragment {
             return;
         }
 
-        PersonalNoteAttachment attachment = null;
-
         try {
             String fileName = getFileName(fileUri);
             String fileType = getMimeType(fileUri);
             long fileSize = getFileSize(fileUri);
 
-            attachment = viewModel.createUploadingPersonalAttachment(
+            viewModel.createUploadingPersonalAttachment(
                     activeAttachmentNoteId,
                     fileName,
                     fileType,
-                    fileSize
-            );
+                    fileSize,
+                    new NotesViewModel.PersonalNoteAttachmentCallback() {
+                        @Override
+                        public void onSuccess(PersonalNoteAttachment attachment) {
+                            if (activeAttachmentBelongsToUnsavedDraft) {
+                                temporaryAttachments.add(attachment);
+                            }
 
-            if (activeAttachmentBelongsToUnsavedDraft) {
-                temporaryAttachments.add(attachment);
-            }
+                            String safeFileName = sanitizeFileName(fileName);
 
-            String safeFileName = sanitizeFileName(fileName);
+                            String userId = LocalSessionManager.getCurrentUserId(requireContext());
 
-            String userId = LocalSessionManager.getCurrentUserId(requireContext());
+                            if (userId == null || userId.trim().isEmpty()) {
+                                viewModel.markPersonalAttachmentFailed(attachment);
+                                safeToast("Please log in again before uploading attachments.", Toast.LENGTH_LONG);
+                                return;
+                            }
 
-            if (userId == null || userId.trim().isEmpty()) {
-                viewModel.markPersonalAttachmentFailed(attachment);
-                safeToast("Please log in again before uploading attachments.", Toast.LENGTH_LONG);
-                return;
-            }
+                            String storagePath = "personal_note_attachments/"
+                                    + activeAttachmentNoteId + "/"
+                                    + attachment.getAttachmentId() + "_" + safeFileName;
 
-            String storagePath = "personal_note_attachments/"
-                    + activeAttachmentNoteId + "/"
-                    + attachment.getAttachmentId() + "_" + safeFileName;
+                            try {
+                                InputStream inputStream = requireContext().getContentResolver().openInputStream(fileUri);
+                                if (inputStream == null) {
+                                    viewModel.markPersonalAttachmentFailed(attachment);
+                                    safeToast("Could not read the selected file.", Toast.LENGTH_LONG);
+                                    return;
+                                }
 
-            InputStream inputStream = requireContext().getContentResolver().openInputStream(fileUri);
-            if (inputStream == null) {
-                viewModel.markPersonalAttachmentFailed(attachment);
-                safeToast("Could not read the selected file.", Toast.LENGTH_LONG);
-                return;
-            }
+                                File localFile = new File(requireContext().getFilesDir(),
+                                        "personal_attachments/" + userId + "/" + activeAttachmentNoteId + "/" + attachment.getAttachmentId() + "_" + safeFileName);
+                                localFile.getParentFile().mkdirs();
 
-            File localFile = new File(requireContext().getFilesDir(),
-                    "personal_attachments/" + userId + "/" + activeAttachmentNoteId + "/" + attachment.getAttachmentId() + "_" + safeFileName);
-            localFile.getParentFile().mkdirs();
+                                FileOutputStream outputStream = new FileOutputStream(localFile);
+                                byte[] buffer = new byte[4096];
+                                int bytesRead;
+                                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                                    outputStream.write(buffer, 0, bytesRead);
+                                }
+                                outputStream.close();
+                                inputStream.close();
 
-            FileOutputStream outputStream = new FileOutputStream(localFile);
-            byte[] buffer = new byte[4096];
-            int bytesRead;
-            while ((bytesRead = inputStream.read(buffer)) != -1) {
-                outputStream.write(buffer, 0, bytesRead);
-            }
-            outputStream.close();
-            inputStream.close();
+                                String localPath = localFile.getAbsolutePath();
 
-            String localPath = localFile.getAbsolutePath();
+                                viewModel.markPersonalAttachmentUploaded(
+                                        attachment,
+                                        storagePath,
+                                        localPath,
+                                        new NotesViewModel.PersonalNoteAttachmentCallback() {
+                                            @Override
+                                            public void onSuccess(PersonalNoteAttachment updated) {
+                                                attachment.setStoragePath(storagePath);
+                                                attachment.setDownloadUrl(localPath);
+                                                attachment.setUploadStatus("DONE");
+                                                safeToast("Attachment saved locally", Toast.LENGTH_SHORT);
+                                            }
 
-            viewModel.markPersonalAttachmentUploaded(
-                    attachment,
-                    storagePath,
-                    localPath
-            );
+                                            @Override
+                                            public void onError(String error) {
+                                                safeToast(error, Toast.LENGTH_LONG);
+                                            }
+                                        });
 
-            attachment.setStoragePath(storagePath);
-            attachment.setDownloadUrl(localPath);
-            attachment.setUploadStatus("DONE");
+                            } catch (Exception e) {
+                                viewModel.markPersonalAttachmentFailed(attachment);
+                                String message = e.getMessage() == null
+                                        ? "Could not save attachment. Please try again."
+                                        : "Could not save attachment: " + e.getMessage();
+                                safeToast(message, Toast.LENGTH_LONG);
+                            }
+                        }
 
-            safeToast("Attachment saved locally", Toast.LENGTH_SHORT);
+                        @Override
+                        public void onError(String error) {
+                            safeToast(error, Toast.LENGTH_LONG);
+                        }
+                    });
 
         } catch (Exception e) {
-            if (attachment != null && isAdded()) {
-                viewModel.markPersonalAttachmentFailed(attachment);
-            }
-
             String message = e.getMessage() == null
                     ? "Could not save attachment. Please try again."
                     : "Could not save attachment: " + e.getMessage();
@@ -2744,18 +2813,34 @@ public class NotesFragment extends Fragment {
             Toast.makeText(requireContext(), "File no longer exists on this device", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (fileName.endsWith(".pdf")) {
+        if (fileName.endsWith(".pdf")
+                || fileName.endsWith(".doc")
+                || fileName.endsWith(".docx")
+                || fileName.endsWith(".ppt")
+                || fileName.endsWith(".pptx")) {
+            String mimeType;
+            if (fileName.endsWith(".pdf")) {
+                mimeType = "application/pdf";
+            } else if (fileName.endsWith(".doc")) {
+                mimeType = "application/msword";
+            } else if (fileName.endsWith(".docx")) {
+                mimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+            } else if (fileName.endsWith(".ppt")) {
+                mimeType = "application/vnd.ms-powerpoint";
+            } else {
+                mimeType = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+            }
             Intent intent = new Intent(Intent.ACTION_VIEW);
             Uri contentUri = androidx.core.content.FileProvider.getUriForFile(
                     requireContext(),
                     requireContext().getPackageName() + ".fileprovider",
                     localFile);
-            intent.setDataAndType(contentUri, "application/pdf");
+            intent.setDataAndType(contentUri, mimeType);
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             try {
-                startActivity(Intent.createChooser(intent, "Open PDF"));
+                startActivity(Intent.createChooser(intent, "Open file"));
             } catch (ActivityNotFoundException e) {
-                Toast.makeText(requireContext(), "No PDF viewer found on this device.", Toast.LENGTH_LONG).show();
+                Toast.makeText(requireContext(), "No app found to open this file type.", Toast.LENGTH_LONG).show();
             }
             return;
         }

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <files-path name="module_notes" path="module_notes/" />
+    <files-path name="personal_attachments" path="personal_attachments/" />
+    <files-path name="research_papers" path="research_papers/" />
+</paths>

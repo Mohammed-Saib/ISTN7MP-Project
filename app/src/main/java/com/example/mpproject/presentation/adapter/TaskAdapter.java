@@ -46,7 +46,6 @@ public class TaskAdapter extends ListAdapter<Todo, TaskAdapter.TaskViewHolder> {
 
     public void setModuleNameMap(Map<String, String> map) {
         moduleNameMap = map != null ? map : new HashMap<>();
-        notifyDataSetChanged();
     }
 
     private static final DiffUtil.ItemCallback<Todo> DIFF_CALLBACK = new DiffUtil.ItemCallback<Todo>() {

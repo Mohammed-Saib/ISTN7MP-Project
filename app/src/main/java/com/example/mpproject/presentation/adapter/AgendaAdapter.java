@@ -95,14 +95,10 @@ public class AgendaAdapter extends ListAdapter<AgendaItem, RecyclerView.ViewHold
 
     public void setModuleNameMap(Map<String, String> map) {
         moduleNameMap = map != null ? map : new HashMap<>();
-        notifyDataSetChanged();
     }
 
     public void setShowDate(boolean show) {
-        if (showDate != show) {
-            showDate = show;
-            notifyDataSetChanged();
-        }
+        showDate = show;
     }
 
     @Override

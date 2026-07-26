@@ -36,4 +36,8 @@ public class AuthViewModel extends ViewModel {
     public LiveData<Boolean> updateProfile(String firstName, String lastName, String email, String school) {
         return authRepository.updateUserProfile(firstName, lastName, email, school);
     }
+
+    public LiveData<Boolean> changePassword(String currentPassword, String newPassword) {
+        return authRepository.changePassword(currentPassword, newPassword);
+    }
 }

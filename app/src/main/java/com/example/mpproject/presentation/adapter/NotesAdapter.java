@@ -7,15 +7,16 @@ import android.view.ViewGroup;
 import android.widget.PopupMenu;
 
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.mpproject.databinding.ItemNoteBinding;
 import com.example.mpproject.presentation.model.NoteListItem;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Objects;
 
-public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHolder> {
+public class NotesAdapter extends ListAdapter<NoteListItem, NotesAdapter.NoteViewHolder> {
 
     public interface OnNoteActionListener {
         void onOpen(NoteListItem item);
@@ -24,17 +25,27 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
         void onDelete(NoteListItem item);
     }
 
-    private final List<NoteListItem> notes = new ArrayList<>();
+    private static final DiffUtil.ItemCallback<NoteListItem> DIFF =
+            new DiffUtil.ItemCallback<NoteListItem>() {
+                @Override
+                public boolean areItemsTheSame(@NonNull NoteListItem oldItem, @NonNull NoteListItem newItem) {
+                    return oldItem.getType() == newItem.getType()
+                            && Objects.equals(oldItem.getId(), newItem.getId());
+                }
+
+                @Override
+                public boolean areContentsTheSame(@NonNull NoteListItem oldItem, @NonNull NoteListItem newItem) {
+                    return Objects.equals(oldItem.getTitle(), newItem.getTitle())
+                            && Objects.equals(oldItem.getSubtitle(), newItem.getSubtitle())
+                            && Objects.equals(oldItem.getContentPreview(), newItem.getContentPreview());
+                }
+            };
+
     private final OnNoteActionListener listener;
 
     public NotesAdapter(OnNoteActionListener listener) {
+        super(DIFF);
         this.listener = listener;
-    }
-
-    public void submitList(List<NoteListItem> newNotes) {
-        notes.clear();
-        if (newNotes != null) notes.addAll(newNotes);
-        notifyDataSetChanged();
     }
 
     @NonNull
@@ -50,12 +61,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
 
     @Override
     public void onBindViewHolder(@NonNull NoteViewHolder holder, int position) {
-        holder.bind(notes.get(position));
-    }
-
-    @Override
-    public int getItemCount() {
-        return notes.size();
+        holder.bind(getItem(position));
     }
 
     class NoteViewHolder extends RecyclerView.ViewHolder {
@@ -77,19 +83,14 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
             binding.txtNoteTitle.setText(item.getTitle());
             binding.txtNoteSubtitle.setText(item.getSubtitle());
 
-            if (item.getType() == NoteListItem.TYPE_PERSONAL_NOTE) {
-                String htmlContent = item.getContentPreview() == null
-                        ? ""
-                        : item.getContentPreview();
-
-                Spanned formattedPreview = Html.fromHtml(
-                        htmlContent,
-                        Html.FROM_HTML_MODE_LEGACY
+            String preview = item.getContentPreview();
+            if (item.getType() == NoteListItem.TYPE_PERSONAL_NOTE
+                    && preview != null && preview.contains("<")) {
+                binding.txtNotePreview.setText(
+                        Html.fromHtml(preview, Html.FROM_HTML_MODE_LEGACY)
                 );
-
-                binding.txtNotePreview.setText(formattedPreview);
             } else {
-                binding.txtNotePreview.setText(item.getContentPreview());
+                binding.txtNotePreview.setText(preview);
             }
 
             binding.getRoot().setOnClickListener(v -> listener.onOpen(item));
