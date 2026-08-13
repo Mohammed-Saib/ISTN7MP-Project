@@ -20,6 +20,67 @@ Following the end of the module, the Firebase and Google Cloud services backing 
 
 The app now compiles and runs with zero external service dependencies.
 
+## Screenshots
+
+All screenshots are taken from the built-in demo account (see [Demo Account](#demo-account) below).
+
+### Getting in
+
+| Login | Home dashboard | Profile |
+|:--:|:--:|:--:|
+| <img src="docs/screenshots/01-login.png" width="230" alt="Login screen"> | <img src="docs/screenshots/02-home-dashboard.png" width="230" alt="Home dashboard showing modules, timer and today's tasks"> | <img src="docs/screenshots/12-profile.png" width="230" alt="Profile and settings screen"> |
+
+### Modules and assessments
+
+| Modules | Module detail | Calendar |
+|:--:|:--:|:--:|
+| <img src="docs/screenshots/03-modules.png" width="230" alt="Modules list with colour coding and active/archived tabs"> | <img src="docs/screenshots/04-module-detail.png" width="230" alt="Module detail showing assessments, weightings and scores"> | <img src="docs/screenshots/06-calendar.png" width="230" alt="Monthly calendar grid with events and agenda"> |
+
+### Tasks, notes and research
+
+| To-Do list | Notes library | Personal notes |
+|:--:|:--:|:--:|
+| <img src="docs/screenshots/05-tasks.png" width="230" alt="Task list with priority indicators and module chips"> | <img src="docs/screenshots/07-notes.png" width="230" alt="Notes library showing module file notes"> | <img src="docs/screenshots/08-personal-notes.png" width="230" alt="Personal notes filtered view"> |
+
+| Research organiser | Pomodoro timer | Timer task picker |
+|:--:|:--:|:--:|
+| <img src="docs/screenshots/09-research-organiser.png" width="230" alt="Research paper list with reading status badges"> | <img src="docs/screenshots/10-pomodoro-timer.png" width="230" alt="Pomodoro timer with focus and break modes"> | <img src="docs/screenshots/11-timer-tasks.png" width="230" alt="Timer task panel showing recommended tasks"> |
+
+### Dark mode
+
+<img src="docs/screenshots/13-dark-mode.png" width="230" alt="Home dashboard in dark mode">
+
+## Demo Account
+
+The app ships with a pre-populated demo account so it can be explored immediately, without registering
+and hand-entering a semester's worth of data first.
+
+| | |
+|---|---|
+| **Email** | `dean.winchester@stu.ukzn.ac.za` |
+| **Password** | `demo1234` |
+
+The account belongs to Dean Winchester, a fictional Information Systems & Technology Honours student
+in the School of Management, IT & Governance at UKZN. It is seeded on first launch by
+`data/local/DemoDataSeeder`, and includes:
+
+- **6 modules** - four active (`ISTN7MP` Mobile Programming, `ISTN7BI` Business Intelligence &
+  Analytics, `ISTN7IS` Information Security Management, `ISTN7RP` IS&T Honours Research Project) and
+  two archived from the previous semester (`ISTN7RM`, `ISTN7ES`)
+- **21 assessments** with weightings totalling 100% per module, a mix of marked and upcoming
+- **14 tasks** across all three priority levels, including completed, overdue, and recurring examples
+- **A full recurring lecture timetable** plus assessment deadlines, exams, and personal events
+- **7 personal notes** organised into 4 folders, and **8 module file notes**
+- **6 research papers** with summaries, methodology notes, and reading status
+
+Everything is fictional: the student, the lecturers, and the assessment marks. The research paper
+records describe real, widely cited IS papers, but the stored PDFs are generated placeholders rather
+than the published articles. Dates are generated relative to the day of seeding, so the dashboard and
+calendar always look current.
+
+Registering your own account works exactly as before - the demo account is simply another row in the
+`users` table, and seeding is skipped once it exists.
+
 ## Features
 
 ### Home Dashboard
@@ -74,6 +135,7 @@ The app now compiles and runs with zero external service dependencies.
 - Recommended tasks based on priority and due date
 
 ### Additional Features
+- Built-in [demo account](#demo-account) pre-populated with a full semester of data
 - AI Chatbot for quick queries
 - Dark mode / Light mode theme support
 - Local notification system with daily study reminders and upcoming tasks
@@ -88,9 +150,12 @@ com.example.mpproject/
 │   ├── local/
 │   │   ├── dao/          # Room DAOs (10 interfaces)
 │   │   ├── entity/       # Room Entities (10 classes)
-│   │   ├── AppDatabase   # Room database (version 9)
+│   │   ├── AppDatabase   # Room database (version 10)
 │   │   ├── DatabaseMigrations  # Schema migrations
+│   │   ├── DemoDataSeeder      # Seeds the built-in demo account on first launch
+│   │   ├── DemoFileFactory     # Generates the placeholder PDFs the demo data points at
 │   │   ├── LocalSessionManager # User session via SharedPreferences
+│   │   ├── PasswordHasher      # SHA-256 hashing shared by auth and the seeder
 │   │   └── PomodoroPreferences # Timer settings
 │   └── repository/       # Repository implementations (11 classes)
 ├── domain/
@@ -161,6 +226,8 @@ All data is stored locally on the device:
 2. Open in Android Studio (Ladybug or later)
 3. Sync Gradle files
 4. Run on an emulator or device (API 26+)
+5. Log in with the [demo account](#demo-account) (`dean.winchester@stu.ukzn.ac.za` / `demo1234`),
+   or register your own
 
 No API keys or external service configuration required - the app runs entirely offline.
 
@@ -230,6 +297,8 @@ Academic Weapon/
 │       ├── AndroidManifest.xml
 │       ├── java/com/example/mpproject/
 │       └── res/
+├── docs/
+│   └── screenshots/          # Images used by this README
 ├── build.gradle
 ├── gradle/
 │   └── libs.versions.toml

@@ -7,12 +7,11 @@ import androidx.lifecycle.MutableLiveData;
 
 import com.example.mpproject.data.local.AppDatabase;
 import com.example.mpproject.data.local.LocalSessionManager;
+import com.example.mpproject.data.local.PasswordHasher;
 import com.example.mpproject.data.local.dao.UserDao;
 import com.example.mpproject.data.local.entity.UserEntity;
 import com.example.mpproject.domain.repository.AuthRepository;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
 
 public class AuthRepositoryImpl implements AuthRepository {
@@ -167,18 +166,6 @@ public class AuthRepositoryImpl implements AuthRepository {
     }
 
     private String hashPassword(String password) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(password.getBytes());
-            StringBuilder hexString = new StringBuilder();
-            for (byte b : hash) {
-                String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1) hexString.append('0');
-                hexString.append(hex);
-            }
-            return hexString.toString();
-        } catch (NoSuchAlgorithmException e) {
-            return password;
-        }
+        return PasswordHasher.sha256(password);
     }
 }
