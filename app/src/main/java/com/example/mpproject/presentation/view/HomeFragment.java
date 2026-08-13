@@ -453,6 +453,20 @@ public class HomeFragment extends Fragment {
         }
 
         binding.tvGreeting.setText(timeOfDay + ", Student");
+
+        String userId = LocalSessionManager.getCurrentUserId(requireContext());
+        if (userId == null) return;
+
+        // Room loads the user off the main thread, so the generic greeting stands in until it arrives.
+        AppDatabase.getDatabase(requireContext()).userDao().getById(userId)
+                .observe(getViewLifecycleOwner(), user -> {
+                    if (binding == null || user == null) return;
+
+                    String firstName = user.getFirstName();
+                    if (firstName == null || firstName.trim().isEmpty()) return;
+
+                    binding.tvGreeting.setText(timeOfDay + ", " + firstName.trim());
+                });
     }
 
     private void setDate() {
